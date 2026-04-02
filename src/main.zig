@@ -8,5 +8,10 @@ pub fn main() !void {
     defer stdout.flush() catch {};
 
     var args: std.process.ArgIteratorPosix = .init();
-    try flag.parse(&args, stdout);
+    try flag.parse(&args, stdout, Flags);
 }
+
+const Flags = struct {
+    recursive:  bool,
+    force:      bool,
+};

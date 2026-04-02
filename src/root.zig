@@ -4,7 +4,9 @@ const FlagFmt = enum {
     Long, Short,
 };
 
-pub fn parse(args: *std.process.ArgIteratorPosix, stdout: *std.Io.Writer) !void {
+pub fn parse(args: *std.process.ArgIteratorPosix, stdout: *std.Io.Writer, flags: anytype) !void {
+    inFlags(flags);
+
     while (args.next()) |arg| {
         const fmt: FlagFmt = flagfmt(arg) orelse continue;
         switch (fmt) {
@@ -21,3 +23,9 @@ fn flagfmt(arg: []const u8) ?FlagFmt {
     if (arg[1] == '-') return FlagFmt.Long;
     return FlagFmt.Short;
 }
+
+fn inFlags(flags: anytype) void {
+    inline for (@typeInfo(flags).@"struct".fields) |fields| {
+        std.debug.print("{s}\n", .{ fields.name });
+    }
+} 
