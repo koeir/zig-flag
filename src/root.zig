@@ -56,15 +56,16 @@ fn get_long_flag(flags: anytype, arg: []const u8) FlagErrs![]const u8 {
     return FlagErrs.NoSuchFlag;
 } 
 
+// Should be updated to work for flag chains
 fn get_short_flag(flags: anytype, arg: []const u8) FlagErrs![]const u8 {
-    outer: for (arg) |char| {
+    for (arg) |char| {
         inline for (@typeInfo(flags).@"struct".decls) |decls| {
             const short: u8 = @field(flags, decls.name).@"short" orelse continue;
-            if (short == char) continue :outer;
+            if (short == char) {
+                return decls.name;
+            }
         }
-
-        return FlagErrs.NoSuchFlag;
     }
 
-    return arg;
+    return FlagErrs.NoSuchFlag;
 }
