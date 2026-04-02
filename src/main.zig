@@ -12,6 +12,15 @@ pub fn main() !void {
 }
 
 const Flags = struct {
-    recursive:  bool,
-    force:      bool,
+    pub var foo = 0;
+    
+    pub const recursive = .{
+        .short = 'r', 
+        .value = false,
+    };
+
+    pub const force = .{
+        .short = 'r',
+        .value = false,
+    };
 };

@@ -25,7 +25,7 @@ fn flagfmt(arg: []const u8) ?FlagFmt {
 }
 
 fn inFlags(flags: anytype) void {
-    inline for (@typeInfo(flags).@"struct".fields) |fields| {
-        std.debug.print("{s}\n", .{ fields.name });
+    inline for (@typeInfo(flags).@"struct".decls) |decls| {
+        std.debug.print("{s}\n", .{ decls.name });
     }
 } 
