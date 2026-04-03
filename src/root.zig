@@ -23,6 +23,34 @@ pub const Flag = struct {
     value:  FlagVal,
     opt:    bool,
     desc:   ?[]const u8,
+
+    pub fn format(
+        self: @This(),
+        writer: *std.Io.Writer,
+    ) std.Io.Writer.Error!void {
+        var padding: usize = 20;
+
+        if (self.short) |short| {
+            try writer.print("-{c}", .{ short });
+            padding -= 2;
+
+            if (self.long) |_| {
+                try writer.writeAll(", ");
+                padding -= 2;
+            }
+        }
+
+        if (self.long) |long| { 
+            try writer.print("--{s}", .{ long });
+            padding -= long.len + 2;
+        }
+
+        while (padding > 0) : (padding -= 1) {
+            try writer.writeAll(" ");
+        }
+
+        if (self.desc) |desc| try writer.writeAll(desc);
+    }
 };
 
 pub fn parse(

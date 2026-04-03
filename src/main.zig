@@ -29,22 +29,24 @@ pub fn main() !void {
     var flags: Result = try flag.parse(&args, Flags, Result);
     _ = &flags;
 
+    // Long hands and short hands
+    try stdout.print("Longhand:  --{s}\n", .{ flags.recursive.long.? });
+    try stdout.print("Shorthand: -{c}\n", .{ flags.recursive.short.? });
+
+    // Value
+    try stdout.print("Recursion is: {}\n", .{ flags.recursive.value.Switch });
+
+
     // Mutate value
-    try stdout.print("Force: {}\n", .{ mut_flags.force.value });
+    try stdout.print("\nForce: {}\n", .{ mut_flags.force.value });
     mut_flags.force.value = .{ .Switch = true };
     try stdout.print("Force: {}\n", .{ mut_flags.force.value });
 
-    try stdout.print("\n", .{});
-
-    // Long hands and short hands
-    if (flags.recursive.long) |long| {
-        try stdout.print("Longhand:  --{s}\n", .{ long });
+    // Print all flags
+    try stdout.writeAll("\nFlags:\n");
+    inline for (@typeInfo(Flags).@"struct".decls) |decl| {
+        try stdout.print("{f}\n", .{ @field(Flags, decl.name) });
     }
-    if (flags.recursive.short) |short| {
-        try stdout.print("Shorthand: -{c}\n", .{ short });
-    }
-
-    try stdout.print("Recursion is: {}\n", .{ flags.recursive.value.Switch });
 }
 
 // Initialize flags and their default values
@@ -54,7 +56,7 @@ const Flags = struct {
         .short = 'r', 
         .value = .{ .Switch = false },
         .opt = true,
-        .desc = null,
+        .desc = "Recurse within directories",
     };
 
     pub const force: flag.Flag = .{
