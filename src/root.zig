@@ -4,6 +4,7 @@ const root = @This();
 pub const FlagErrs = error {
     NoSuchFlag,
     FlagNotSwitch,
+    FlagNotArg,
 };
 
 const FlagFmt = enum {
@@ -16,7 +17,7 @@ pub const FlagType = enum {
 
 pub const FlagVal = union(FlagType) {
     Switch: bool,
-    Argumentative: []u8,
+    Argumentative: []const u8,
 };
 
 pub const Flag = struct {
@@ -31,6 +32,18 @@ pub const Flag = struct {
         switch (self.value) {
             .Switch => |*val| val.* = !val.*,
             else    => |_| return FlagErrs.FlagNotSwitch,
+        }
+    }
+
+    // Sets argument for Argumentative type flag
+    // Caller owns memory
+    pub fn set_arg(self: *Flag, allocator: std.mem.Allocator, arg: []const u8) ![]const u8 {
+        switch (self.value) {
+            .Argumentative => |*val| {
+                 val.* = try allocator.dupe(u8, arg);
+                return val.*;
+            },
+            else           => |_| return FlagErrs.FlagNotArg,
         }
     }
 
@@ -50,7 +63,7 @@ pub const Flag = struct {
             }
         }
 
-        if (self.long) |long| { 
+        if (self.long) |long| {
             try writer.print("--{s}", .{ long });
             padding -= long.len + 2;
         }
@@ -64,8 +77,8 @@ pub const Flag = struct {
 };
 
 pub fn parse(
-    args: *std.process.ArgIteratorPosix, 
-    flags: anytype, 
+    args: *std.process.ArgIteratorPosix,
+    flags: anytype,
     comptime T: type) !T {
     while (args.next()) |arg| {
         const fmt: FlagFmt = flagfmt(arg) orelse continue;
@@ -97,7 +110,7 @@ fn get_long_flag(flags: anytype, arg: []const u8) FlagErrs![]const u8 {
     }
 
     return FlagErrs.NoSuchFlag;
-} 
+}
 
 // Should be updated to work for flag chains
 fn get_short_flag(flags: anytype, arg: []const u8) FlagErrs![]const u8 {
@@ -121,7 +134,7 @@ pub fn init(comptime init_flags: anytype) type {
     const init_flags_info = @typeInfo(init_flags).@"struct";
 
     var mut_flags: [init_flags_info.decls.len]std.builtin.Type.StructField = undefined;
-    
+
     inline for (init_flags_info.decls, 0..) |decl, i| {
         const decl_field: Flag = @field(init_flags, decl.name);
 
