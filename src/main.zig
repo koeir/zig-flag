@@ -7,6 +7,9 @@ pub fn main() !void {
     const stdout = &stdout_writer.interface;
     defer stdout.flush() catch {};
 
+    var alloc_buffer: [1024]u8 = undefined;
+    var fba: std.heap.FixedBufferAllocator = .init(&alloc_buffer);
+
     // parse requires       vvvvvvvvvvvv
     var args: std.process.ArgIteratorPosix = .init();
 
@@ -22,6 +25,7 @@ pub fn main() !void {
 
     // Make a mutable instance populated with the default values
     var mut_flags = Result{};
+    _ = &mut_flags;
 
     // (WIP)
     // parse is a runtime function that actually changes
@@ -36,11 +40,16 @@ pub fn main() !void {
     // Value
     try stdout.print("Recursion is: {}\n", .{ flags.recursive.value.Switch });
 
-
     // Mutate value
-    try stdout.print("\nForce: {}\n", .{ mut_flags.force.value });
-    try mut_flags.force.toggle();
-    try stdout.print("Force: {}\n", .{ mut_flags.force.value });
+    try stdout.print("\nForce: {}\n", .{ flags.force.value });
+    try flags.force.toggle();
+    try stdout.print("Force: {}\n", .{ flags.force.value });
+
+    // Set path
+    const path: []const u8 = try flags.file.set_arg(fba.allocator(), "/path/to/file");
+    defer fba.allocator().free(path);
+
+    try stdout.print("Path: {s}\n", .{ flags.file.value.Argumentative });
 
     // Print all flags
     try stdout.writeAll("\nFlags:\n");
@@ -65,5 +74,13 @@ const Flags = struct {
         .value = .{ .Switch = false },
         .opt = true,
         .desc = "Skip confirmation prompts",
+    };
+
+    pub const file: flag.Flag = .{
+        .long = "path",
+        .short = 'p',
+        .value = .{ .Argumentative = undefined },
+        .opt = true,
+        .desc = "Path to file",
     };
 };
