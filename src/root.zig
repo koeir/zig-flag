@@ -20,7 +20,26 @@ pub const FlagVal = union(FlagType) {
     Argumentative: []const u8,
 };
 
+pub const Flags = struct {
+    list: []Flag,
+
+    // returns null if not found
+    pub fn get(self: *Flags, name: []const u8) ?*Flag {
+        return for (self.list) |*flag| {
+            if (std.mem.eql(u8, flag.name, name)) break flag;
+        } else null;
+    }
+
+    // errs if not found
+    pub fn try_get(self: *Flags, name: []const u8) FlagErrs!*Flag {
+        return for (self.list) |*flag| {
+            if (std.mem.eql(u8, flag.name, name)) break flag;
+        } else FlagErrs.NoSuchFlag;
+    }
+};
+
 pub const Flag = struct {
+    name:   []const u8,
     long:   ?[]const u8,
     short:  ?u8,
     value:  FlagVal,
@@ -130,32 +149,20 @@ fn get_short_flag(flags: anytype, arg: []const u8) FlagErrs![]const u8 {
 // they can be used in runtime
 //
 // Turns declarations from the init flags into fields
-pub fn init(comptime init_flags: anytype) type {
+pub fn init(comptime init_flags: anytype) Flags {
     const init_flags_info = @typeInfo(init_flags).@"struct";
 
-    var mut_flags: [init_flags_info.decls.len]std.builtin.Type.StructField = undefined;
+    var flagarr: [init_flags_info.decls.len]Flag = undefined;
 
     inline for (init_flags_info.decls, 0..) |decl, i| {
         const decl_field = @field(init_flags, decl.name);
         if (@TypeOf(decl_field) != Flag) {
             @compileError("Found declaration in struct of init flags that is not of type Flag");
         }
-
-        mut_flags[i] = std.builtin.Type.StructField {
-            .name = decl.name,
-            .type = @TypeOf(decl_field),
-            .default_value_ptr = &decl_field,
-            .is_comptime = false,
-            .alignment = @alignOf(Flag),
-        };
+        flagarr[i] = decl_field;
     }
 
-    return @Type(.{
-        .@"struct" = .{
-            .layout = std.builtin.Type.ContainerLayout.auto,
-            .fields = &mut_flags,
-            .decls = &[_]std.builtin.Type.Declaration {},
-            .is_tuple = false,
-        }
-    });
+    return Flags {
+        .list = &flagarr,
+    };
 }
