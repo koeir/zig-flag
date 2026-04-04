@@ -136,7 +136,10 @@ pub fn init(comptime init_flags: anytype) type {
     var mut_flags: [init_flags_info.decls.len]std.builtin.Type.StructField = undefined;
 
     inline for (init_flags_info.decls, 0..) |decl, i| {
-        const decl_field: Flag = @field(init_flags, decl.name);
+        const decl_field = @field(init_flags, decl.name);
+        if (@TypeOf(decl_field) != Flag) {
+            @compileError("Found declaration in struct of init flags that is not of type Flag");
+        }
 
         mut_flags[i] = std.builtin.Type.StructField {
             .name = decl.name,
