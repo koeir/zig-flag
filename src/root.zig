@@ -1,7 +1,9 @@
 const std = @import("std");
+const root = @This();
 
 pub const FlagErrs = error {
     NoSuchFlag,
+    FlagNotSwitch,
 };
 
 const FlagFmt = enum {
@@ -120,7 +122,7 @@ pub fn init(comptime init_flags: anytype) type {
             .type = @TypeOf(decl_field),
             .default_value_ptr = &decl_field,
             .is_comptime = false,
-            .alignment = @alignOf(@TypeOf(init_flags)),
+            .alignment = @alignOf(Flag),
         };
     }
 
