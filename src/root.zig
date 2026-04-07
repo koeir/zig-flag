@@ -1,11 +1,10 @@
 const std = @import("std");
-const root = @This();
 
 pub const FlagErrs = error {
     NoSuchFlag,
     FlagNotSwitch,
     FlagNotArg,
-    DuplicateFlags,
+    DuplicateFlag,
     IncorrectArrSize
 };
 
@@ -106,10 +105,17 @@ pub const Flag = struct {
     }
 };
 
+pub const ParseConfig = struct {
+    NoDups: bool = false,
+    verbose: bool = false,
+};
+
 pub fn parse(
     args: *std.process.ArgIteratorPosix,
     comptime init_flags: []const Flag,
-    out_flags: []Flag) !Flags {
+    out_flags: []Flag,
+    comptime cfg: ParseConfig,
+    ) !Flags {
 
     if (out_flags.len != init_flags.len) {
         std.debug.print("ERROR: Size of parse result array must match size of init flags array\n", .{});
@@ -142,9 +148,13 @@ pub fn parse(
                 // Check if the flag is duplicate
                 const default_val = try default_flags.switchval(flag.name);
 
-                // Handle accordingly; will add conf opt to return if dup
                 if (val != default_val) {
-                    continue;
+                    if (!cfg.NoDups) continue;
+
+                    if (cfg.verbose) {
+                        std.debug.print("Duplicate flag: {s}\n", .{ arg });
+                        return FlagErrs.DuplicateFlag;
+                    }
                 }
 
                 try flag.toggle();
