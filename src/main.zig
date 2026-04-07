@@ -12,13 +12,7 @@ pub fn main() !void {
     var flaggar: [initflags.len]flag.Flag = undefined;
     const flags = try flag.parse(&args, &initflags, &flaggar);
 
-    for (flags.list.*) |f| {
-        try stdout.print("{f}    ", .{ f });
-        switch (f.value) { 
-            .Switch => |val| try stdout.print("{any}\n", .{ val }),
-            else => continue,
-        }
-    }
+    try stdout.print("{any}\n", .{ flags.get("recursive").?.value });
 }
 
 // Initialize flags and their default values
