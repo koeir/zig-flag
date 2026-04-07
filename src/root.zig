@@ -24,16 +24,16 @@ pub const Flags = struct {
     list: *const []const Flag,
     
     // returns null if not found
-    pub fn get(self: *Flags, name: []const u8) ?*const Flag {
-        return for (self.list) |*flag| {
-            if (std.mem.eql(u8, flag.name, name)) break flag;
+    pub fn get(self: *const Flags, name: []const u8) ?*const Flag {
+        return for (self.list.*) |flag| {
+            if (std.mem.eql(u8, flag.name, name)) break &flag;
         } else null;
     }
 
     // errs if not found
-    pub fn try_get(self: *Flags, name: []const u8) FlagErrs!*Flag {
-        return for (self.list) |*flag| {
-            if (std.mem.eql(u8, flag.name, name)) break flag;
+    pub fn try_get(self: *const Flags, name: []const u8) FlagErrs!*const Flag {
+        return for (self.list.*) |flag| {
+            if (std.mem.eql(u8, flag.name, name)) break &flag;
         } else FlagErrs.NoSuchFlag;
     }
 };
