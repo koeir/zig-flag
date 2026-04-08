@@ -61,6 +61,7 @@ pub const Flag = struct {
 
     // Sets argument for Argumentative type flag
     // Caller owns memory
+    // WIP
     pub fn set_arg(self: *Self, allocator: std.mem.Allocator, arg: []const u8) ![]const u8 {
         switch (self.value) {
             .Argumentative => |*val| {
@@ -69,13 +70,6 @@ pub const Flag = struct {
             },
             else           => |_| return FlagErrs.FlagNotArg,
         }
-    }
-
-    pub fn switchval(self: *const Self) FlagErrs!bool {
-        return switch (self.value) {
-            .Switch => |val| val,
-            else => FlagErrs.NoSuchFlag,
-        };
     }
 
     pub fn isDefault(self: *const Self, defaults: Flags) !bool {
@@ -162,7 +156,7 @@ fn parse_long(arg: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConfig)
 
     switch (flag.value) {
         .Switch => |val| {
-            if (val != try defaults.get(flag.name).?.switchval()) {
+            if (val != defaults.get(flag.name).?.value.Switch) {
                 if (cfg.AllowDups) return;
                 if (cfg.verbose) std.debug.print("{}: {s}\n", .{ FlagErrs.DuplicateFlag, arg });
                 return;
@@ -181,7 +175,7 @@ fn parse_chain(chain: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConf
 
         switch (flag.value) {
             .Switch => |val| {
-                if (val != try defaults.get(flag.name).?.switchval()) {
+                if (val != defaults.get(flag.name).?.value.Switch) {
                     if (cfg.AllowDups) continue;
                     if (cfg.verbose) std.debug.print("{}: {c}\n", .{ FlagErrs.DuplicateFlag, c });
                     continue;
