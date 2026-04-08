@@ -12,11 +12,11 @@ const FlagFmt = enum {
     Long, Short,
 };
 
-pub const FlagType = enum {
+const FlagType = enum {
     Switch, Argumentative
 };
 
-pub const FlagVal = union(FlagType) {
+const FlagVal = union(FlagType) {
     Switch: bool,
     Argumentative: []const u8,
 };
@@ -127,6 +127,7 @@ pub fn parse(
     comptime cfg: ParseConfig,
     ) !Flags {
 
+    // Should be compile error really but out_flags must be a runtime var
     if (out_flags.len != init_flags.list.len) {
         std.debug.print("ERROR: Size of parse result array must match size of init flags array\n", .{});
         return FlagErrs.IncorrectArrSize;
@@ -145,12 +146,14 @@ pub fn parse(
         }
     }
 
+    // Reset the iterator 
     args.index = 0;
     return Flags {
         .list = out_flags
     };
 }
 
+// Finds and sets the values for flags that have been called in long form
 fn parse_long(arg: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConfig) !void {
     var flag: *Flag = try get_long_flag(flags, arg);
 
@@ -169,6 +172,7 @@ fn parse_long(arg: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConfig)
     }
 }
 
+// Same thing but for short flags + chained
 fn parse_chain(chain: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConfig) !void {
     for (chain) |c| {
         var flag: *Flag = try get_short_flag(flags, c);
@@ -189,7 +193,9 @@ fn parse_chain(chain: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConf
     }
 }
 
-pub fn flagfmt(arg: []const u8) ?FlagFmt {
+// Returns whether if a flag is in long or short form
+// null if it is not a flag
+fn flagfmt(arg: []const u8) ?FlagFmt {
     if (arg.len < 2) return null;
     if (arg[0] != '-') return null;
 
@@ -197,7 +203,7 @@ pub fn flagfmt(arg: []const u8) ?FlagFmt {
     return FlagFmt.Short;
 }
 
-pub fn get_long_flag(flags: []Flag, arg: []const u8) FlagErrs!*Flag {
+fn get_long_flag(flags: []Flag, arg: []const u8) FlagErrs!*Flag {
     for (flags) |*flag| {
         if (std.mem.eql(u8, flag.long orelse continue, arg)) return flag;
     }
@@ -205,8 +211,7 @@ pub fn get_long_flag(flags: []Flag, arg: []const u8) FlagErrs!*Flag {
     return FlagErrs.NoSuchFlag;
 }
 
-// Should be updated to work for flag chains
-pub fn get_short_flag(flags: []Flag, arg: u8) FlagErrs!*Flag {
+fn get_short_flag(flags: []Flag, arg: u8) FlagErrs!*Flag {
     for (flags) |*flag| {
         if (arg == flag.short orelse continue) return flag;
     }
