@@ -167,12 +167,15 @@ fn parse_long(arg: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConfig)
 
     switch (flag.value) {
         .Switch => |val| {
+            // Check for duplicate flags and handle accordingly
             if (val != defaults.get(flag.name).?.value.Switch) {
                 if (cfg.AllowDups) return;
                 if (cfg.verbose) std.debug.print("{}: {s}\n", .{ FlagErrs.DuplicateFlag, arg });
                 return;
             }
+            // Whether AllowDups is turned on or not, the flag won't be toggled again
 
+            // Toggle if not dup
             try flag.toggle();
         },
 
