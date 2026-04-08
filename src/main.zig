@@ -13,16 +13,7 @@ pub fn main() !void {
     const flags = try flag.parse(&args, initflags, &flagarr, .{ .verbose = true });
 
     for (flags.list) |f| {
-        switch (f.value) {
-            .Switch => |val| {
-                if (val == try initflags.get(f.name).?.switchval()) continue;
-                try stdout.print("{f}\n", .{ f });
-            },
-            .Argumentative => |val| {
-                if (std.mem.eql(u8, val, initflags.get(f.name).?.value.Argumentative)) continue;
-                try stdout.print("{s}\n", .{ val });
-            },
-        }
+        if (!try f.isDefault(initflags)) try stdout.print("{f}\n", .{ f } );
     }
 }
 

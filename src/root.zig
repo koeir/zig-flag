@@ -22,17 +22,19 @@ pub const FlagVal = union(FlagType) {
 };
 
 pub const Flags = struct {
+    const Self = @This();
+
     list: []const Flag,
     
     // returns null if not found
-    pub fn get(self: *const Flags, name: []const u8) ?*const Flag {
+    pub fn get(self: *const Self, name: []const u8) ?*const Flag {
         return for (self.list) |flag| {
             if (std.mem.eql(u8, flag.name, name)) break &flag;
         } else null;
     }
 
     // errs if not found
-    pub fn try_get(self: *const Flags, name: []const u8) FlagErrs!*const Flag {
+    pub fn try_get(self: *const Self, name: []const u8) FlagErrs!*const Flag {
         return for (self.list) |flag| {
             if (std.mem.eql(u8, flag.name, name)) break &flag;
         } else FlagErrs.NoSuchFlag;
@@ -40,6 +42,8 @@ pub const Flags = struct {
 };
 
 pub const Flag = struct {
+    const Self = @This();
+
     name:   []const u8,
     long:   ?[]const u8,
     short:  ?u8,
@@ -57,7 +61,7 @@ pub const Flag = struct {
 
     // Sets argument for Argumentative type flag
     // Caller owns memory
-    pub fn set_arg(self: *Flag, allocator: std.mem.Allocator, arg: []const u8) ![]const u8 {
+    pub fn set_arg(self: *Self, allocator: std.mem.Allocator, arg: []const u8) ![]const u8 {
         switch (self.value) {
             .Argumentative => |*val| {
                  val.* = try allocator.dupe(u8, arg);
@@ -67,11 +71,25 @@ pub const Flag = struct {
         }
     }
 
-    pub fn switchval(self: *const Flag) FlagErrs!bool {
+    pub fn switchval(self: *const Self) FlagErrs!bool {
         return switch (self.value) {
             .Switch => |val| val,
             else => FlagErrs.NoSuchFlag,
         };
+    }
+
+    pub fn isDefault(self: *const Self, defaults: Flags) !bool {
+        const default = try defaults.try_get(self.name);
+
+        switch (self.value) {
+            .Switch => |val| {
+                return (val == default.value.Switch);
+            },
+
+            .Argumentative => |val| {
+                return std.mem.eql(u8, val, default.value.Argumentative);
+            },
+        }
     }
 
     pub fn format(
