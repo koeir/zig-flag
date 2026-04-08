@@ -39,6 +39,15 @@ pub const Flags = struct {
             if (std.mem.eql(u8, flag.name, name)) break &flag;
         } else FlagErrs.NoSuchFlag;
     }
+
+    pub fn format(
+        self: @This(),
+        writer: *std.Io.Writer,
+    ) std.Io.Writer.Error!void {
+        for (self.list) |flag| {
+            try writer.print("{f}\n", .{ flag } );
+        }
+    }
 };
 
 pub const Flag = struct {

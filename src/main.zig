@@ -12,9 +12,16 @@ pub fn main() !void {
     var flagarr: [initflags.list.len]flag.Flag = undefined;
     const flags = try flag.parse(&args, initflags, &flagarr, .{ .verbose = true });
 
+    try stdout.writeAll("Toggled flags:\n");
+    // Formatted print for each flag
     for (flags.list) |f| {
         if (!try f.isDefault(initflags)) try stdout.print("{f}\n", .{ f } );
     }
+
+    // Also works with the Flags struct
+    try stdout.writeAll("\n");
+    try stdout.writeAll("Options:\n");
+    try stdout.print("{f}", .{ initflags });
 }
 
 // Initialize flags and their default values
