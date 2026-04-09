@@ -19,6 +19,17 @@ pub fn main() !void {
         if (!try f.isDefault(initflags)) try stdout.print("{f}\n", .{ f } );
     }
 
+    try stdout.writeAll("\n");
+    try stdout.writeAll("Values:\n");
+    for (flags.list) |f| {
+        if (try f.isDefault(initflags)) continue;
+
+        switch (f.value) {
+            .Switch => |val| try stdout.print("{}\n", .{ val }),
+            .Argumentative => |val| try stdout.print("{s}\n", .{ val }),
+        }
+    }
+
     // Also works with the Flags struct
     try stdout.writeAll("\n");
     try stdout.writeAll("Options:\n");
@@ -52,8 +63,8 @@ const initflags: flag.Flags = .{
                 .long = "path",
                 .short = 'p',
                 // Argumentative flags should not be initialized as undefined,
-                // instead, make a reference to an empty array of 1024 u8s
-                .value = .{ .Argumentative = &[_]u8{' '} ** 1024 },
+                // instead, make a reference to array of 1024 u8s
+                .value = .{ .Argumentative = [_:0]u8{0} ** 1024},
                 .desc = "Path to file",
             }
     },

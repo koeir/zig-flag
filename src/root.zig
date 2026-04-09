@@ -1,11 +1,13 @@
 const std = @import("std");
 
 pub const FlagErrs = error {
+    NoArgs,
     NoSuchFlag,
-    FlagNotSwitch,
-    FlagNotArg,
+    FlagNotSwitch,      // non-switch/non-bool Flag treated as a switch/bool
+    FlagNotArg,         // non-argumentative flag treated as an argumentative
     DuplicateFlag,
-    IncorrectArrSize
+    ArgNoArg,           // no argument given to argumentative flag
+    ArgTooLong,
 };
 
 const FlagFmt = enum {
@@ -17,8 +19,8 @@ const FlagType = enum {
 };
 
 const FlagVal = union(FlagType) {
-    Switch: bool,
-    Argumentative: *const [1024]u8,
+    Switch: bool,                   // On/off
+    Argumentative: [1024:0]u8, // Takes an argument
 };
 
 pub const Flags = struct {
@@ -89,7 +91,12 @@ pub const Flag = struct {
             },
 
             .Argumentative => |val| {
-                return std.mem.eql(u8, val, default.value.Argumentative);
+                const default_val: []const u8 =  switch (default.value) {
+                    .Argumentative => |v| &v,
+                    else => unreachable,
+                };
+
+                return std.mem.eql(u8, &val, default_val);
             },
         }
     }
@@ -145,32 +152,35 @@ pub fn parse(
         out_flags[i] = value;
     }
 
+    if (!args.skip()) return error.NoArgs;
     while (args.next()) |arg| {
         const fmt: FlagFmt = flagfmt(arg) orelse continue;
 
         switch (fmt) {
             .Short => try parse_chain(arg[1..], out_flags, init_flags, cfg),
-            .Long => try parse_long(arg[2..], out_flags, init_flags, cfg),
+            .Long => try parse_long(args, out_flags, init_flags, cfg),
         }
     }
 
-    // Reset the iterator 
+    // Reset the iterator when successful
     args.index = 0;
+
     return Flags {
         .list = out_flags
     };
 }
 
 // Finds and sets the values for flags that have been called in long form
-fn parse_long(arg: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConfig) !void {
-    var flag: *Flag = try get_long_flag(flags, arg, cfg);
+fn parse_long(args: *std.process.ArgIteratorPosix, flags: []Flag, comptime defaults: Flags, cfg: ParseConfig) !void {
+    const flag_arg: [:0]u8 = std.mem.sliceTo(std.os.argv[args.index - 1], 0)[2..:0];
+    var flag: *Flag = try get_long_flag(flags, flag_arg, cfg);
 
     switch (flag.value) {
         .Switch => |val| {
             // Check for duplicate flags and handle accordingly
             if (val != defaults.get(flag.name).?.value.Switch) {
                 if (cfg.AllowDups) return;
-                if (cfg.verbose) std.debug.print("{}: {s}\n", .{ FlagErrs.DuplicateFlag, arg });
+                if (cfg.verbose) std.debug.print("{}: {s}\n", .{ FlagErrs.DuplicateFlag, flag_arg });
                 return;
             }
             // Whether AllowDups is turned on or not, the flag won't be toggled again
@@ -179,7 +189,15 @@ fn parse_long(arg: []const u8, flags: []Flag, defaults: Flags, cfg: ParseConfig)
             try flag.toggle();
         },
 
-        .Argumentative => return, //debug
+        .Argumentative => |*val| {
+            const next_arg = args.next() orelse {
+                return FlagErrs.ArgNoArg;
+            };
+
+            if (next_arg.len > 1024) return FlagErrs.ArgTooLong;
+
+            @memcpy(val[0..next_arg.len], next_arg);
+        },
     }
 }
 
