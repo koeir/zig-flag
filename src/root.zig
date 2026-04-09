@@ -21,6 +21,16 @@ const FlagType = enum {
 const FlagVal = union(FlagType) {
     Switch: bool,                   // On/off
     Argumentative: [1024:0]u8, // Takes an argument
+    
+    pub fn format(
+        self: @This(),
+        writer: *std.Io.Writer,
+    ) std.Io.Writer.Error!void {
+        switch (self) {
+            .Switch => |val| try writer.print("{}", .{ val }),
+            .Argumentative => |val| try writer.print("{s}", .{ val }),
+        }
+    }
 };
 
 pub const Flags = struct {
@@ -40,6 +50,33 @@ pub const Flags = struct {
         return for (self.list) |flag| {
             if (std.mem.eql(u8, flag.name, name)) break &flag;
         } else FlagErrs.NoSuchFlag;
+    }
+
+    pub fn get_value(self: *const Self, comptime name: []const u8, comptime T: type) FlagErrs!T {
+        const flag = try try_get(self, name);
+
+        return switch (flag.value) {
+            .Switch => |val| {
+                if (@TypeOf(val) != T) { 
+                    @panic(
+                        "type provided does not match the retrieved flag's type\n" ++
+                        "hint: tried to retrieve the value of '" ++ name ++ "' as '" ++ @typeName(T) ++
+                        "' when '" ++ name ++ "' is '" ++ @typeName(@TypeOf(val)) ++ "'"
+                    ); 
+                }
+                return val;
+            },
+            .Argumentative => |val| {
+                if (@TypeOf(val) != T) { 
+                    @panic(
+                        "type provided does not match the retrieved flag's type\n" ++
+                        "hint: tried to retrieve the value of '" ++ name ++ "' as '" ++ @typeName(T) ++
+                        "' when '" ++ name ++ "' is '" ++ @typeName(@TypeOf(val)) ++ "'"
+                    ); 
+                }
+                return val;
+            }
+        };
     }
 
     pub fn format(
@@ -69,20 +106,8 @@ pub const Flag = struct {
         }
     }
 
-    // Sets argument for Argumentative type flag
-    // Caller owns memory
-    // WIP
-    pub fn set_arg(self: *Self, allocator: std.mem.Allocator, arg: []const u8) ![]const u8 {
-        switch (self.value) {
-            .Argumentative => |*val| {
-                 val.* = try allocator.dupe(u8, arg);
-                return val.*;
-            },
-            else           => |_| return FlagErrs.FlagNotArg,
-        }
-    }
-
-    pub fn isDefault(self: *const Self, defaults: Flags) !bool {
+    // Pass on the init Flags struct
+    pub fn isDefault(self: *const Self, comptime defaults: Flags) !bool {
         const default = try defaults.try_get(self.name);
 
         switch (self.value) {
@@ -176,12 +201,12 @@ fn parse_long(args: *std.process.ArgIteratorPosix, flags: []Flag, comptime defau
     var flag: *Flag = try get_long_flag(flags, flag_arg, cfg);
 
     switch (flag.value) {
-        .Switch => |val| {
+        .Switch => |_| {
             // Check for duplicate flags and handle accordingly
-            if (val != defaults.get(flag.name).?.value.Switch) {
+            if (!try flag.isDefault(defaults)) {
                 if (cfg.AllowDups) return;
-                if (cfg.verbose) std.debug.print("{}: {s}\n", .{ FlagErrs.DuplicateFlag, flag_arg });
-                return;
+                if (cfg.verbose) std.debug.print("{}: --{s}\n", .{ FlagErrs.DuplicateFlag, flag_arg });
+                return FlagErrs.DuplicateFlag;
             }
             // Whether AllowDups is turned on or not, the flag won't be toggled again
 
@@ -190,6 +215,12 @@ fn parse_long(args: *std.process.ArgIteratorPosix, flags: []Flag, comptime defau
         },
 
         .Argumentative => |*val| {
+            if (!try flag.isDefault(defaults)) {
+                if (cfg.AllowDups) return;
+                if (cfg.verbose) std.debug.print("{}: --{s}\n", .{ FlagErrs.DuplicateFlag, flag_arg });
+                return FlagErrs.DuplicateFlag;
+            }
+
             const next_arg = args.next() orelse {
                 return FlagErrs.ArgNoArg;
             };
@@ -202,31 +233,37 @@ fn parse_long(args: *std.process.ArgIteratorPosix, flags: []Flag, comptime defau
 }
 
 // Same thing but for short flags + chained
-fn parse_chain(args: *std.process.ArgIteratorPosix, flags: []Flag, defaults: Flags, cfg: ParseConfig) !void {
+fn parse_chain(args: *std.process.ArgIteratorPosix, flags: []Flag, comptime defaults: Flags, cfg: ParseConfig) !void {
     const chain: [:0]u8 = std.mem.sliceTo(std.os.argv[args.index - 1], 0)[1..:0];
 
     for (chain) |c| {
         var flag: *Flag = try get_short_flag(flags, c, cfg);
 
         switch (flag.value) {
-            .Switch => |val| {
-                if (val != defaults.get(flag.name).?.value.Switch) {
-                    if (cfg.AllowDups) continue;
-                    if (cfg.verbose) std.debug.print("{}: {c}\n", .{ FlagErrs.DuplicateFlag, c });
-                    continue;
+            .Switch => |_| {
+                if (!try flag.isDefault(defaults)) {
+                    if (cfg.AllowDups) return;
+                    if (cfg.verbose) std.debug.print("{}: -{c}\n", .{ FlagErrs.DuplicateFlag, c });
+                    return FlagErrs.DuplicateFlag;
                 }
 
                 try flag.toggle();
             },
 
             .Argumentative => |*val| { 
-            const next_arg = args.next() orelse {
-                return FlagErrs.ArgNoArg;
-            };
+                if (!try flag.isDefault(defaults)) {
+                    if (cfg.AllowDups) return;
+                    if (cfg.verbose) std.debug.print("{}: -{c}\n", .{ FlagErrs.DuplicateFlag, c });
+                    return FlagErrs.DuplicateFlag;
+                }
 
-            if (next_arg.len > 1024) return FlagErrs.ArgTooLong;
+                const next_arg = args.next() orelse {
+                    return FlagErrs.ArgNoArg;
+                };
 
-            @memcpy(val[0..next_arg.len], next_arg);
+                if (next_arg.len > 1024) return FlagErrs.ArgTooLong;
+
+                @memcpy(val[0..next_arg.len], next_arg);
         },
         }
     }

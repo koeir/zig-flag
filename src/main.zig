@@ -11,7 +11,7 @@ pub fn main() !void {
 
     // Make mutable flag array "buffer" in stack
     var flagarr: [initflags.list.len]flag.Flag = undefined;
-    const flags = try flag.parse(&args, initflags, &flagarr, .{ .verbose = true });
+    const flags = try flag.parse(&args, initflags, &flagarr, .{ .AllowDups = false, .verbose = true });
 
     try stdout.writeAll("Toggled flags:\n");
     // Formatted print for each flag
@@ -24,11 +24,12 @@ pub fn main() !void {
     for (flags.list) |f| {
         if (try f.isDefault(initflags)) continue;
 
-        switch (f.value) {
-            .Switch => |val| try stdout.print("{}\n", .{ val }),
-            .Argumentative => |val| try stdout.print("{s}\n", .{ val }),
-        }
+        try stdout.print("{s}: {f}\n", .{ f.name, f.value });
     }
+
+    try stdout.writeAll("\n");
+    try stdout.print("The path is {s}!\n", .{ try flags.get_value("file", [1024:0]u8) });
+    try stdout.print("Recursion is {any}\n", .{ try flags.get_value("recursive", bool) });
 
     // Also works with the Flags struct
     try stdout.writeAll("\n");
