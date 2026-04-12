@@ -99,6 +99,8 @@ pub const Flag = struct {
     value:  FlagVal,
     desc:   ?[]const u8,
 
+    pub var padding: usize = 30;
+
     // Toggles value of Switch type flag
     pub fn toggle(self: *Flag) !void {
         switch (self.value) {
@@ -141,8 +143,6 @@ pub const Flag = struct {
         self: @This(),
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
-        var padding: usize = 30;
-
         if (self.short) |short| {
             try writer.print("-{c}", .{ short });
 
