@@ -99,7 +99,7 @@ pub const Flag = struct {
     value:  FlagVal,
     desc:   ?[]const u8,
 
-    pub var padding: usize = 30;
+    pub var padding: u64 = 30;
 
     // Toggles value of Switch type flag
     pub fn toggle(self: *Flag) !void {
@@ -143,22 +143,25 @@ pub const Flag = struct {
         self: @This(),
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
+        // Don't change the actual padding var
+        var tmp_padding = padding;
+
         if (self.short) |short| {
             try writer.print("-{c}", .{ short });
 
             switch (self.value) {
                 .Argumentative => {
                     try writer.print(" <{s}>", .{ self.name });
-                    padding -= self.name.len + 3;
+                    tmp_padding -= @as(u64, self.name.len) + 3;
                 },
                 else => {},
             }
 
-            padding -= 2;
+            tmp_padding -= 2;
 
             if (self.long) |_| {
                 try writer.writeAll(", ");
-                padding -= 2;
+                tmp_padding -= 2;
             }
         }
 
@@ -167,14 +170,14 @@ pub const Flag = struct {
             switch (self.value) {
                 .Argumentative => {
                     try writer.print(" <{s}>", .{ self.name });
-                    padding -= self.name.len + 3;
+                    tmp_padding -= @as(u64, self.name.len) + 3;
                 },
                 else => {},
             }
-            padding -= long.len + 2;
+            tmp_padding -= @as(u64, long.len + 2);
         }
 
-        while (padding > 0) : (padding -= 1) {
+        while (tmp_padding > 0) : (tmp_padding-= 1) {
             try writer.writeAll(" ");
         }
 
