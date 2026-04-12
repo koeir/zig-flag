@@ -61,7 +61,7 @@ pub fn check_nextarg(flag: *const Flag, arg: []const u8, fmt: root.Type.FlagFmt,
     if (arg[0] != '-') return;
     if (!cfg.verbose) return FlagErrs.ArgNoArg;
 
-    try cfg.writer.?.print("No valid argument supplied for: ", .{});
+    try cfg.writer.?.print("'{s}' is not a valid argument supplied for: ", .{ arg });
     switch (fmt) {
         .Long => try cfg.writer.?.print("--{s}\n", .{ flag.long.? }),
         .Short => try cfg.writer.?.print("-{c}\n", .{ flag.short.? }),
