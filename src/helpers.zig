@@ -44,7 +44,7 @@ pub fn parse_chain(args: *std.process.ArgIteratorPosix, flags: []Flag, comptime 
                 try flag.toggle();
             },
 
-            .Argumentative => |_| { 
+            .Argumentative => |_| {
                 const next_arg = args.next() orelse {
                     return FlagErrs.ArgNoArg;
                 };
