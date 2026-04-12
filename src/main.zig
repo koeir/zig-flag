@@ -18,14 +18,16 @@ pub fn main() !void {
     var flagarr: [initflags.list.len]flagparse.Type.Flag = undefined;
     const flags = flagparse.parse(&args, initflags, &flagarr, 
     .{ .AllowDups = false, .verbose = true, .writer = stderr }) catch |err| {
+        if (err != flagparse.Type.FlagErrs.ArgNoArg) return;
+
         const arg: []const u8 = std.mem.sliceTo(std.os.argv[args.index - 1], 0);
-        const fmt = flagparse.flagfmt(arg) orelse return err;
+        const fmt = flagparse.flagfmt(arg) orelse return;
         var flagtmp: *const flagparse.Type.Flag = undefined;
 
         try stdout.writeAll("Usage:\n");
         switch (fmt) {
             .Long   => |_| {
-                flagtmp = flagparse.get_long_flag(&flagarr, arg[2..], .{}) catch { return err; };
+                flagtmp = flagparse.get_long_flag(&flagarr, arg[2..], .{}) catch { return; };
                 try stdout.print("{f}\n", .{ flagtmp.* });
             },
             .Short  => |_| {
@@ -37,7 +39,7 @@ pub fn main() !void {
         }
 
         try stdout.writeAll("\n");
-        return err;
+        return;
     };
 
     try stdout.writeAll("Toggled flags:\n");

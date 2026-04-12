@@ -29,8 +29,21 @@ pub fn parse(
         const fmt: Type.FlagFmt = flagfmt(arg.*) orelse continue;
 
         switch (fmt) {
-            .Short  => try helpers.parse_chain(args, out_flags, init_flags, cfg),
-            .Long   => try helpers.parse_long(args, out_flags, init_flags, cfg),
+            .Short  => helpers.parse_chain(args, out_flags, init_flags, cfg) catch |err| {
+                // If its argnoarg and the end of argv hasn't been reached yet,
+                // the next arg *must* have been a flag, so -1 for later error checking
+                if (err == Type.FlagErrs.ArgNoArg and
+                args.index == args.count) args.index -= 1;
+
+                return err;
+            },
+            .Long   => helpers.parse_long(args, out_flags, init_flags, cfg) catch |err| {
+                // See comment directly above
+                if (err == Type.FlagErrs.ArgNoArg and
+                args.index == args.count) args.index -= 1;
+
+                return err;
+            },
         }
     }
 
