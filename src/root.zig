@@ -64,21 +64,3 @@ pub fn flagfmt(arg: []const u8) ?Type.FlagFmt {
     if (arg[1] == '-') return Type.FlagFmt.Long;
     return Type.FlagFmt.Short;
 }
-
-pub fn get_long_flag(flags: []Type.Flag, arg: []const u8, cfg: Type.ParseConfig) !*Type.Flag {
-    for (flags) |*flag| {
-        if (std.mem.eql(u8, flag.long orelse continue, arg)) return flag;
-    }
-
-    if (cfg.verbose) try cfg.writer.?.print("No such flag: --{s}\n", .{ arg });
-    return Type.FlagErrs.NoSuchFlag;
-}
-
-pub fn get_short_flag(flags: []Type.Flag, arg: u8, cfg: Type.ParseConfig) !*Type.Flag {
-    for (flags) |*flag| {
-        if (arg == flag.short orelse continue) return flag;
-    }
-
-    if (cfg.verbose) try cfg.writer.?.print("No such flag: -{c}\n", .{ arg });
-    return Type.FlagErrs.NoSuchFlag;
-}

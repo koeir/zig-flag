@@ -24,15 +24,15 @@ pub fn main() !void {
         const fmt = flagparse.flagfmt(arg) orelse return;
         var flagtmp: *const flagparse.Type.Flag = undefined;
 
-        try stdout.writeAll("\nUsage:\n");
+        try stdout.writeAll("Usage:\n");
         switch (fmt) {
             .Long   => |_| {
-                flagtmp = flagparse.get_long_flag(&flagarr, arg[2..], .{}) catch { return; };
+                flagtmp = initflags.get_with_flag(arg[2..]).?;
                 try stdout.print("{f}\n", .{ flagtmp.* });
             },
             .Short  => |_| {
                 for (arg[1..]) |c| {
-                    flagtmp = flagparse.get_short_flag(&flagarr, c, .{}) catch { continue; };
+                    flagtmp = initflags.get_with_flag(&[_]u8 {c}).?;
                     try stdout.print("{f}\n", .{ flagtmp.* });
                 }
             }

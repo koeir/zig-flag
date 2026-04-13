@@ -53,6 +53,18 @@ pub const Flags = struct {
         } else FlagErrs.NoSuchFlag;
     }
 
+    pub fn get_with_flag(self: *const Self, flag: []const u8) ?*const Flag {
+        return for (self.list) |*ret| {
+            if (ret.short) |short| {
+                if (flag[0] == short) break ret;
+            }
+
+            if (ret.long) |long| {
+                if (std.mem.eql(u8, flag, long)) break ret;
+            }
+        } else null;
+    }
+
     pub fn get_value(self: *const Self, comptime name: []const u8, comptime T: type) FlagErrs!T {
         const flag = try try_get(self, name);
 

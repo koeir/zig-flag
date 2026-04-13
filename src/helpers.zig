@@ -14,7 +14,7 @@ pub fn parse_long(
     {
 
     const flag_arg: [:0]u8 = std.mem.sliceTo(std.os.argv[args.index - 1], 0)[2..:0];
-    var flag: *Flag = try root.get_long_flag(flags, flag_arg, cfg);
+    var flag: *Flag = try get_long_flag(flags, flag_arg, cfg);
 
     try checkdup(flag, defaults, root.Type.FlagFmt.Long, cfg);
 
@@ -47,7 +47,7 @@ pub fn parse_chain(
     const chain: [:0]u8 = std.mem.sliceTo(std.os.argv[args.index - 1], 0)[1..:0];
 
     for (chain) |c| {
-        var flag: *Flag = try root.get_short_flag(flags, c, cfg);
+        var flag: *Flag = try get_short_flag(flags, c, cfg);
 
         try checkdup(flag, defaults, root.Type.FlagFmt.Short, cfg);
 
@@ -111,4 +111,22 @@ pub fn checkdup(
         try cfg.writer.?.flush();
         return FlagErrs.DuplicateFlag;
     }
+}
+
+pub fn get_long_flag(flags: []root.Type.Flag, arg: []const u8, cfg: root.Type.ParseConfig) !*root.Type.Flag {
+    for (flags) |*flag| {
+        if (std.mem.eql(u8, flag.long orelse continue, arg)) return flag;
+    }
+
+    if (cfg.verbose) try cfg.writer.?.print("No such flag: --{s}\n", .{ arg });
+    return root.Type.FlagErrs.NoSuchFlag;
+}
+
+pub fn get_short_flag(flags: []root.Type.Flag, arg: u8, cfg: root.Type.ParseConfig) !*root.Type.Flag {
+    for (flags) |*flag| {
+        if (arg == flag.short orelse continue) return flag;
+    }
+
+    if (cfg.verbose) try cfg.writer.?.print("No such flag: -{c}\n", .{ arg });
+    return root.Type.FlagErrs.NoSuchFlag;
 }
