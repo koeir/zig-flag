@@ -26,6 +26,8 @@ pub fn parse_long(
 
         .Argumentative => |_| {
             const next_arg = args.next() orelse {
+                try cfg.writer.?.print("No argument supplied for --{s}\n", .{ flag.long.? });
+                try cfg.writer.?.flush();
                 return FlagErrs.ArgNoArg;
             };
 
@@ -58,6 +60,8 @@ pub fn parse_chain(
 
             .Argumentative => |_| {
                 const next_arg = args.next() orelse {
+                    try cfg.writer.?.print("No argument supplied for -{c}\n", .{ flag.short.? });
+                    try cfg.writer.?.flush();
                     return FlagErrs.ArgNoArg;
                 };
 
