@@ -31,7 +31,8 @@ pub fn parse(
         switch (fmt) {
             .Short  => helpers.parse_chain(args, out_flags, init_flags, cfg) catch |err| {
                 // If its argnoarg and the end of argv hasn't been reached yet,
-                // the next arg *must* have been a flag, so -1 for later error checking
+                // the next arg *must* have been a flag, so -1 so that arg.index
+                // is on the erred flag
                 if (err == Type.FlagErrs.ArgNoArg and
                 args.index != args.count) args.index -= 1;
 
