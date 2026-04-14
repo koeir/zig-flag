@@ -1,3 +1,2 @@
-build.zig.zon
 zig-out/
 .zig-cache/
