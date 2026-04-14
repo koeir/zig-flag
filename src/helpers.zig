@@ -80,7 +80,7 @@ pub fn check_nextarg(
     cfg: root.Type.ParseConfig) !void 
     {
 
-    if (arg[0] != '-') return;
+    if (arg[0] != '-' or cfg.allowDashAsFirstCharInArgForArg) return;
     if (!cfg.verbose) return FlagErrs.ArgNoArg;
 
     try cfg.writer.?.print("'{s}' is not a valid argument supplied for: ", .{ arg });
@@ -102,7 +102,7 @@ pub fn checkdup(
     {
 
     if (!try flag.isDefault(defaults)) {
-        if (cfg.AllowDups) return;
+        if (cfg.allowDups) return;
         if (cfg.verbose) {
             switch (fmt) {
                 .Long => try cfg.writer.?.print("{}: --{s}\n",

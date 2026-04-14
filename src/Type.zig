@@ -35,7 +35,7 @@ pub const FlagVal = union(FlagType) {
 };
 
 // This is just a view into a list of immut flags.
-// This is meant to hold either the default flags or the already parsed flags;
+// This is meant to hold either the default flags or the already parsed flags;ty
 // type should not and cannot be used for mutation
 //
 // if mutation after parsing is necessary for some reason,
@@ -206,7 +206,9 @@ pub const Flag = struct {
 };
 
 pub const ParseConfig = struct {
-    AllowDups: bool = false,
+    allowDups: bool = false,
     verbose: bool = false,
     writer: ?*std.io.Writer = null,
+    // very specific
+    allowDashAsFirstCharInArgForArg: bool = true,
 };
