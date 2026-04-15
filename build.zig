@@ -17,6 +17,10 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(lib);
 
+    const want_example = b.option(bool, "example", "Build example") orelse false;
+
+    if (want_example) {
+
     const exe = b.addExecutable(.{
         .name = "example-noalloc",
         .root_module = b.createModule(.{
@@ -26,14 +30,15 @@ pub fn build(b: *std.Build) void {
         })
     });
 
-    exe.root_module.addImport("flagparse", flagparse);
-    b.installArtifact(exe);
+        exe.root_module.addImport("flagparse", flagparse);
+        b.installArtifact(exe);
 
-    const run_step = b.step("run", "run");
-    const run_cmd = b.addRunArtifact(exe);
-    run_step.dependOn(&run_cmd.step);
-    run_cmd.step.dependOn(b.getInstallStep());
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
+        const run_step = b.step("run", "run");
+        const run_cmd = b.addRunArtifact(exe);
+        run_step.dependOn(&run_cmd.step);
+        run_cmd.step.dependOn(b.getInstallStep());
+        if (b.args) |args| {
+            run_cmd.addArgs(args);
+        }
     }
 }
