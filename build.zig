@@ -18,9 +18,9 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(lib);
 
     const exe = b.addExecutable(.{
-        .name = "example",
+        .name = "example-noalloc",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main.zig"),
+            .root_source_file = b.path("src/example-noalloc.zig"),
             .target = target,
             .optimize = optimize,
         })
