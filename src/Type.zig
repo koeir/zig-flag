@@ -155,7 +155,7 @@ pub const Flag = struct {
         switch (self.value) {
             .Switch => return FlagErrs.FlagNotArg,
             .Argumentative => |*val| {
-                if (arg.len > 1024) return FlagErrs.ArgTooLong;
+                if (arg.len > 1024) return FlagErrs.OutOfMemory;
                 @memcpy(val[0..arg.len], arg);
             }
         }
