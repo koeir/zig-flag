@@ -129,8 +129,8 @@ pub fn main() !void {
 
 ```zig
     ...
-    const recursive: bool = try flags.get_value("recursive", bool);
-    const file = try flags.get_value("file", [1024:0]u8);
+    const recursive: bool = try flags.get_value("recursive", flagparse.Type.Switch);
+    const file = try flags.get_value("file", flagparse.Type.Argumentative);
     ...
 ```
 
