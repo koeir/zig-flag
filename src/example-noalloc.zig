@@ -72,8 +72,8 @@ pub fn main(init: std.process.Init) !void {
     }
 
     try stdout.writeAll("\n");
-    try stdout.print("The path is {s}!\n", .{ try flags.get_value("file", [1024:0]u8) });
-    try stdout.print("Recursion is {any}\n", .{ try flags.get_value("recursive", bool) });
+    try stdout.print("The path is {s}!\n", .{ try flags.get_value("file", flagparse.Type.Argumentative) });
+    try stdout.print("Recursion is {any}\n", .{ try flags.get_value("recursive", flagparse.Type.Switch) });
 
     // Also works with the Flags struct
     try stdout.writeAll("\n");

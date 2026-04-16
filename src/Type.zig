@@ -11,12 +11,15 @@ pub const FlagErrs = error {
     ArgTooLong,
     OutOfMemory,
     NoWriter,
-    FlagTypeMismatch,
 };
 
 pub const FlagFmt = enum {
     Long, Short,
 };
+
+// Type aliases
+pub const Switch = bool;
+pub const Argumentative = [1024:0]u8;
 
 pub const FlagType = enum {
     Switch, Argumentative
@@ -108,14 +111,14 @@ pub const Flags = struct {
 
         return switch (flag.value) {
             .Switch => |val| {
-                if (@TypeOf(val) != T) { 
-                    return FlagErrs.FlagTypeMismatch;
+                if (@TypeOf(val) != T) {
+                    return FlagErrs.FlagNotArg;
                 }
                 return val;
             },
             .Argumentative => |val| {
                 if (@TypeOf(val) != T) { 
-                    return FlagErrs.FlagTypeMismatch;
+                    return FlagErrs.FlagNotSwitch;
                 }
                 return val;
             }
