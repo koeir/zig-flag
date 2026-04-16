@@ -37,6 +37,35 @@ pub const FlagVal = union(FlagType) {
     }
 };
 
+pub const ArgIterator = struct {
+    args: *const std.process.Args,
+    // vvv Should not be used for iterating as it does not update index
+    iter: *std.process.Args.Iterator,
+    // ^^^
+    index: usize = 0,
+    count: usize,
+
+    pub fn current(self: *@This()) ?[:0]const u8 {
+        if (self.index > self.count) return null;
+        
+        return std.mem.span(self.args.vector[self.index-1]);
+    }
+
+    pub fn next(self: *@This()) ?[:0]const u8 {
+        if (self.index == self.count) return null;
+
+        self.index += 1;
+        return self.iter.next();
+    }
+
+    pub fn skip(self: *@This()) bool {
+        if (self.index == self.count) return false;
+
+        self.index += 1;
+        return self.iter.skip();
+    }
+};
+
 // This is just a view into a list of immut flags.
 // This is meant to hold either the default flags or the already parsed flags;ty
 // type should not and cannot be used for mutation
@@ -118,13 +147,13 @@ pub const Flag = struct {
     pub fn toggle(self: *Flag) !void {
         switch (self.value) {
             .Switch => |*val| val.* = !val.*,
-            else    => |_| return FlagErrs.FlagNotSwitch,
+            else    => return FlagErrs.FlagNotSwitch,
         }
     }
 
     pub fn set_arg(self: *Flag, arg: []const u8) !void {
         switch (self.value) {
-            .Switch => |_| return FlagErrs.FlagNotArg,
+            .Switch => return FlagErrs.FlagNotArg,
             .Argumentative => |*val| {
                 if (arg.len > 1024) return FlagErrs.ArgTooLong;
                 @memcpy(val[0..arg.len], arg);
@@ -203,7 +232,7 @@ pub const Flag = struct {
 pub const ParseConfig = struct {
     allowDups: bool = false,
     verbose: bool = false,
-    writer: ?*std.io.Writer = null,
+    writer: ?*std.Io.Writer = null,
     // very specific
     allowDashAsFirstCharInArgForArg: bool = true,
     prefix: ?[]const u8 = null,

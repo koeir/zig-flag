@@ -4,12 +4,24 @@ pub const Type = @import("Type.zig");
 
 // arg.index is not reset when unsuccessful
 pub fn parse(
-    args: *std.process.ArgIteratorPosix,
+    args: *const std.process.Args,
     argbuf: [][:0]const u8,
     comptime init_flags: Type.Flags,
     out_flags: []Type.Flag,
+    errorbuf: ?[]u8,
     cfg: Type.ParseConfig,
     ) !struct { flags: Type.Flags, argv: [][:0]const u8 } {
+
+    var iter = args.iterate();
+    var args_iter: Type.ArgIterator = .{
+        .args = args,
+        .iter = &iter,
+        .count = args.vector.len,
+    };
+
+    if (args_iter.count > argbuf.len) {
+        return error.OutOfMemory;
+    }
 
     // Should be compile error really but out_flags must be a runtime var
     if (out_flags.len != init_flags.list.len) {
@@ -38,12 +50,8 @@ pub fn parse(
         .arg = argbuf,
     };
 
-    if (args.count > argbuf.len) {
-        return error.OutOfMemory;
-    }
-
-    if (!args.skip()) return error.NoArgs;
-    while (args.next()) |*arg| {
+    if (!args_iter.skip()) return error.NoArgs;
+    while (args_iter.next()) |*arg| {
         const fmt: Type.FlagFmt = flagfmt(arg.*) orelse {
             // If it isn't a flag, add it to out_args and continue
             //
@@ -56,27 +64,38 @@ pub fn parse(
         };
 
         switch (fmt) {
-            .Short  => helpers.parse_chain(args, out_flags, init_flags, cfg) catch |err| {
+            .Short  => helpers.parse_chain(&args_iter, out_flags, init_flags, cfg) catch |err| {
                 // If its argnoarg and the end of argv hasn't been reached yet,
                 // the next arg *must* have been a flag, so -1 so that arg.index
                 // is on the erred flag
                 if (err == Type.FlagErrs.ArgNoArg and
-                args.index != args.count) args.index -= 1;
+                args_iter.index != args_iter.count) args_iter.index -= 1;
+
+                if (errorbuf) |e| {
+                    const current_arg = args_iter.current().?;
+
+                    if (e.len < current_arg.len) return error.OutOfMemory;
+                    @memcpy(e[0..current_arg.len], current_arg);
+                }
 
                 return err;
             },
-            .Long   => helpers.parse_long(args, out_flags, init_flags, cfg) catch |err| {
+            .Long   => helpers.parse_long(&args_iter, out_flags, init_flags, cfg) catch |err| {
                 // See comment directly above
                 if (err == Type.FlagErrs.ArgNoArg and
-                args.index != args.count) args.index -= 1;
+                args_iter.index != args_iter.count) args_iter.index -= 1;
+
+                if (errorbuf) |e| {
+                    const current_arg = args_iter.current().?;
+
+                    if (e.len < current_arg.len) return error.OutOfMemory;
+                    @memcpy(e[0..current_arg.len], current_arg);
+                }
 
                 return err;
             },
         }
     }
-
-    // Reset the iterator when successful
-    args.index = 0;
 
     const ret: Type.Flags = .{
         .list = out_flags,

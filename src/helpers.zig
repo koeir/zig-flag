@@ -7,24 +7,23 @@ const FlagErrs = root.Type.FlagErrs;
 
 // Finds and sets the values for flags that have been called in long form
 pub fn parse_long(
-    args: *std.process.ArgIteratorPosix, 
+    args: *root.Type.ArgIterator, 
     flags: []Flag,
     comptime defaults: Flags,
     cfg: root.Type.ParseConfig) !void 
     {
 
-    const flag_arg: [:0]u8 = std.mem.sliceTo(std.os.argv[args.index - 1], 0)[2..:0];
-    var flag: *Flag = try get_long_flag(flags, flag_arg, cfg);
+    var flag: *Flag = try get_long_flag(flags, args.current().?[2..], cfg);
 
     try checkdup(flag, defaults, root.Type.FlagFmt.Long, cfg);
 
     switch (flag.value) {
-        .Switch => |_| {
+        .Switch => {
             // Toggle if not dup
             try flag.toggle();
         },
 
-        .Argumentative => |_| {
+        .Argumentative => {
             const next_arg = args.next() orelse {
                 if (cfg.prefix) |prefix| try cfg.writer.?.print("{s}", .{ prefix } );
                 try cfg.writer.?.print("No argument supplied for --{s}\n", .{ flag.long.? });
@@ -40,13 +39,13 @@ pub fn parse_long(
 
 // Same thing but for short flags + chained
 pub fn parse_chain(
-    args: *std.process.ArgIteratorPosix,
+    args: *root.Type.ArgIterator,
     flags: []Flag,
     comptime defaults: Flags,
     cfg: root.Type.ParseConfig) !void 
     {
 
-    const chain: [:0]u8 = std.mem.sliceTo(std.os.argv[args.index - 1], 0)[1..:0];
+    const chain: []const u8 = args.current().?[1..:0];
 
     for (chain) |c| {
         var flag: *Flag = try get_short_flag(flags, c, cfg);
@@ -54,11 +53,11 @@ pub fn parse_chain(
         try checkdup(flag, defaults, root.Type.FlagFmt.Short, cfg);
 
         switch (flag.value) {
-            .Switch => |_| {
+            .Switch => {
                 try flag.toggle();
             },
 
-            .Argumentative => |_| {
+            .Argumentative => {
                 const next_arg = args.next() orelse {
                     if (cfg.prefix) |prefix| 
                         try cfg.writer.?.print("{s}", .{ prefix } );
