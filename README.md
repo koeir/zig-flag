@@ -92,8 +92,8 @@ pub fn main(init: std.process.Init) !void {
     const min = init.minimal;
 
     var gpa = std.heap.DebugAllocator(.{}){};
-    var fba: std.heap.ArenaAllocator = .init(gpa.allocator());
-    defer fba.deinit();
+    var arena: std.heap.ArenaAllocator = .init(gpa.allocator());
+    defer arena.deinit();
 
     // points to last arg on error
     // not necessarily the arg that caused the error
@@ -112,7 +112,7 @@ pub fn main() !void {
     ...
     // returns a tuple of Flags and resulting args
     // resulting args is a maybe value
-    const result = flagparse.parse(&fba.allocator(), &min.args, initflags, &errptr, .{}) catch |err| {
+    const result = flagparse.parse(&arena.allocator(), &min.args, initflags, &errptr, .{}) catch |err| {
         // handle err
         return;
     };
