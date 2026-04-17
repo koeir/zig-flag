@@ -24,10 +24,12 @@ pub fn parse(
 
     // Initialize the parsed flags
     var out_flags = try allocator.alloc(Type.Flag, init_flags.list.len);
+    errdefer allocator.free(out_flags);
     for (init_flags.list, 0..) |value, i| out_flags[i] = value;
 
     // Use buffer
     var out_args = Type.OutArgs{};
+    errdefer if (out_args.args) |value| allocator.free(value);
 
     // put current arg in iteration in errptr on error
     errdefer errptr.* = blk: {
