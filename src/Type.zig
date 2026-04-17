@@ -88,6 +88,8 @@ pub const ArgIterator = struct {
     pub fn current(self: *@This()) ?[:0]const u8 {
         if (self.index > self.count) return null;
         
+        if (self.index == 0) return std.mem.span(self.args.vector[self.index]);
+
         return std.mem.span(self.args.vector[self.index-1]);
     }
 
