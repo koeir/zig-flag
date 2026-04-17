@@ -55,6 +55,8 @@ pub fn parse(
         }
     }
 
+    if (args_iter.index == 1) return error.NoArgs;
+
     // shrink out_args because it's guaranteed to be <= args
     try out_args.resize(allocator);
 
