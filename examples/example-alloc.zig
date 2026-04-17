@@ -120,19 +120,5 @@ const initflags: flagparse.Type.Flags = .{
             .value = .{ .Argumentative = null },
             .desc = "Path to file",
         },
-
-        .{
-            .name = "hi",
-            .short = 'h',
-            .desc = "hello",
-            .value = .{ .Switch = false }
-        },
-        .{
-            .name = "hello",
-            .long = "hello",
-            .desc = "hi",
-            .value = .{  .Argumentative = null }
-        },
-    },
-
+    }
 };

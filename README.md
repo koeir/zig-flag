@@ -65,17 +65,19 @@ const initflags: flagparse.Type.Flags = .{
             .value = .{ .Switch = false },
             .desc = "Skip confirmation prompts",
         },
+
+        // Arguments will accept the next argv
+        // e.g. -prf noob
+        // "noob" will be accepted as the file
         .{
             .name = "file",
             .long = "path",
             .short = 'p',
-            .value = .{ .Argumentative = .{0} ** 1024 },
+            .value = .{ .Argumentative = null },
             .desc = "Path to file",
         },
-    },
-
+    }
 };
-
 ```
 
 3. Initialize args, allocators, and error pointer for handling
