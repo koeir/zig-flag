@@ -14,16 +14,15 @@ pub fn main(init: std.process.Init) !void {
     defer stdout.flush() catch {};
 
     var gpa = std.heap.DebugAllocator(.{}){};
-    defer {
-        if (gpa.deinit() == std.heap.Check.leak) @panic("MEMORYLEAK");
-    }
+    var fba: std.heap.ArenaAllocator = .init(gpa.allocator());
+    defer fba.deinit();
 
     // points to last arg on error
     // not necessarily the arg that caused the error
     var errptr: [*:0]const u8 = undefined;
 
     // actual parse, returns a tuple of Flags and resulting args
-    const result = flagparse.parse(&gpa.allocator(), &min.args, initflags, &errptr,
+    const result = flagparse.parse(&fba.allocator(), &min.args, initflags, &errptr,
     .{ .allowDups = false, .verbose = true, .writer = stderr, .prefix = "my-program: " }) catch |err| {
         if (err != flagparse.Type.FlagErrs.ArgNoArg) return;
 
@@ -51,10 +50,7 @@ pub fn main(init: std.process.Init) !void {
 
     // retrieve tuple values
     const flags: flagparse.Type.Flags = result.flags;
-    defer flags.deinit(&gpa.allocator());
-
     const flagless_args = result.argv;
-    defer if (flagless_args) |args| gpa.allocator().free(args);
 
     try stdout.writeAll("Toggled flags:\n");
     // Formatted print for each flagparse
