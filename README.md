@@ -4,7 +4,6 @@ A simple flag parser for Zig programs.
 
 ## Features
 
-- No heap allocation
 - Formatted printing
 - Simple interface
 - Returns argv list without flags
@@ -79,7 +78,7 @@ const initflags: flagparse.Type.Flags = .{
 
 ```
 
-3. Initialize posix argument iterator and buffers
+3. Initialize args, allocators, and error pointer for handling
 
 ```zig
 const std = @import("std");
@@ -90,9 +89,13 @@ pub fn main(init: std.process.Init) !void {
     const io = init.io;
     const min = init.minimal;
 
-    var flagarr: [initflags.list.len]flagparse.Type.Flag = undefined;
-    var argbuf: [20][:0]const u8 = undefined;
-    var errorbuf: [256]u8 = undefined;
+    var gpa = std.heap.DebugAllocator(.{}){};
+    var fba: std.heap.ArenaAllocator = .init(gpa.allocator());
+    defer fba.deinit();
+
+    // points to last arg on error
+    // not necessarily the arg that caused the error
+    var errptr: [*:0]const u8 = undefined;
     ...
 
 ```
@@ -105,22 +108,12 @@ const flagparse = @import("flagparse");
 
 pub fn main() !void {
     ...
-    var args: std.process.ArgIteratorPosix = .init();
-
-    // buffers; must remain in scope for flags and argv
-    var flagarr: [initflags.list.len]flagparse.Type.Flag = undefined;
-    var argbuf: [20][:0]const u8 = undefined;
-    var errorbuf: [20]u8 = undefined;
-
-    const result = flagparse.parse(&min.args, argbuf[0..],
-        initflags, &flagarr, &errorbuf,
-        .{}) catch {
+    // returns a tuple of Flags and resulting args
+    // resulting args is a maybe value
+    const result = flagparse.parse(&fba.allocator(), &min.args, initflags, &errptr, .{}) catch |err| {
         // handle err
+        return;
     };
-
-    // retrieve values from tuple
-    const flags = result.flags;
-    const argv = result.argv;
     ...
 
 ```
@@ -129,8 +122,16 @@ pub fn main() !void {
 
 ```zig
     ...
+    // retrieve tuple values
+    const flags: flagparse.Type.Flags = result.flags;
+    const flagless_args = result.argv;
+
     const recursive: bool = try flags.get_value("recursive", flagparse.Type.Switch);
     const file = try flags.get_value("file", flagparse.Type.Argumentative);
+
+    if (flagless_args) |args| {
+        // do stuff
+    }
     ...
 ```
 
