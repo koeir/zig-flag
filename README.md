@@ -97,7 +97,7 @@ pub fn main(init: std.process.Init) !void {
 
     // points to last arg on error
     // not necessarily the arg that caused the error
-    var errptr: [*:0]const u8 = undefined;
+    var errptr: ?[*:0]const u8 = null;
     ...
 
 ```
