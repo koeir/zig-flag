@@ -75,10 +75,8 @@ pub fn main(init: std.process.Init) !void {
 
     // Also works with the Flags struct
     try stdout.writeAll("\n");
-    try stdout.writeAll("Options:\n");
-    try stdout.print("{f}", .{ initflags });
+    try initflags.usage(stdout);
 
-    try stdout.writeAll("\n");
     try stdout.writeAll("Flagless argv list:\n");
 
     if (flagless_args) |args| {
@@ -96,6 +94,7 @@ const initflags: flagparse.Type.Flags = .{
     {
         .{
             .name = "recursive",
+            .tag = "This",
             .long = "recursive",
             .short = 'r',
             .value = .{ .Switch = false },
@@ -104,6 +103,7 @@ const initflags: flagparse.Type.Flags = .{
 
         .{
             .name = "force",
+            .tag = "This",
             .long = "force",
             .short = 'f',
             .value = .{ .Switch = false },
@@ -115,6 +115,7 @@ const initflags: flagparse.Type.Flags = .{
         // "noob" will be accepted as the file
         .{
             .name = "file",
+            .tag = "That",
             .long = "path",
             .short = 'p',
             .value = .{ .Argumentative = null },

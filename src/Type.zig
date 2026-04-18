@@ -168,12 +168,47 @@ pub const Flags = struct {
         allocator.free(self.list);
     }
 
-    pub fn format(
-        self: @This(),
+    // can only be called by init flags
+    pub fn usage(
+        comptime self: @This(),
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
+        // get n of flags
+        const n_tags: usize = comptime blk: {
+            var n_tags: usize = 0;
+            for (self.list) |flag| {
+                if (flag.tag) |_| n_tags += 1;
+            } break :blk n_tags;
+        };
+
+        // keep track of flags that are already printed
+        var done: [n_tags][]const u8 = undefined;
+        var n_done: usize = 0;
         for (self.list) |flag| {
-            try writer.print("{f}\n", .{ flag } );
+            const tag = flag.tag orelse continue;
+
+            // if the flags of tag is already printed,
+            // continue
+            const already_done = for (done) |did| {
+                if (std.mem.eql(u8, did, tag)) break true;
+            } else false;
+            if (already_done) continue;
+
+            // print all flags of the tag
+            try writer.print("{s}:\n", .{ tag });
+            for (self.list) |f| {
+                if (!std.mem.eql(u8, f.tag orelse continue, tag)) continue;
+                try writer.print("{f}\n", .{ f });
+            } try writer.writeAll("\n");
+
+            done[n_done] = tag;
+            n_done += 1;
+        }
+
+        // print tagless flags
+        for (self.list) |flag| {
+            if (flag.tag) |_| continue;
+            try writer.print("{f}\n", .{ flag });
         }
     }
 };
@@ -182,6 +217,7 @@ pub const Flag = struct {
     const Self = @This();
 
     name:   []const u8,
+    tag:    ?[]const u8 = null,
     long:   ?[]const u8 = null,
     short:  ?u8 = null,
     value:  FlagVal,
