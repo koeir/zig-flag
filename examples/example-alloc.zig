@@ -19,14 +19,14 @@ pub fn main(init: std.process.Init) !void {
 
     // points to last arg on error
     // not necessarily the arg that caused the error
-    var errptr: [*:0]const u8 = undefined;
+    var errptr: ?[*:0]const u8 = null;
 
     // actual parse, returns a tuple of Flags and resulting args
     const result = flagparse.parse(&fba.allocator(), &min.args, initflags, &errptr,
     .{ .allowDups = false, .verbose = true, .writer = stderr, .prefix = "my-program: " }) catch |err| {
         if (err != flagparse.Type.FlagErrs.ArgNoArg) return;
 
-        const arg: []const u8 = std.mem.span(errptr);
+        const arg: []const u8 = std.mem.span(errptr orelse return);
         const fmt = flagparse.flagfmt(arg) orelse return;
         var flagtmp: *const flagparse.Type.Flag = undefined;
 

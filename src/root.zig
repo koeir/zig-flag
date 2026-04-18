@@ -7,7 +7,7 @@ pub fn parse(
     allocator: *const std.mem.Allocator,
     args: *const std.process.Args,
     comptime init_flags: Type.Flags,
-    errptr: *[*:0]const u8,
+    errptr: *?[*:0]const u8,
     cfg: Type.ParseConfig,
 ) !struct { flags: Type.Flags, argv: ?[][:0]const u8 } {
     if (cfg.verbose == true and cfg.writer == null) return error.NoWriter;
