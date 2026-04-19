@@ -30,10 +30,8 @@ pub fn parse(
     errdefer if (out_args.args) |value| allocator.free(value);
 
     // put current arg in iteration in errptr on error
-    errdefer errptr.* = blk: {
-        if (args_iter.index > 0) {
-            break :blk args.vector[args_iter.index-1];
-        } else break :blk args.vector[0];
+    errdefer if (args_iter.index > 1) {
+        errptr.* = args.vector[args_iter.index-1];
     };
 
     if (!args_iter.skip()) return error.NoArgs;
