@@ -52,6 +52,7 @@ const initflags: flagparse.Type.Flags = .{
     {
         .{
             .name = "recursive",
+            .tag = "Switches",
             .long = "recursive",      // long flags and short flags are maybe values; 
             .short = 'r',             // if both are missing then they can't... be set
             .value = .{ .Switch = false },
@@ -60,6 +61,7 @@ const initflags: flagparse.Type.Flags = .{
 
         .{
             .name = "force",
+            .tag = "Switches",
             .long = "force",
             .short = 'f',
             .value = .{ .Switch = false },
@@ -71,6 +73,7 @@ const initflags: flagparse.Type.Flags = .{
         // "noob" will be accepted as the file
         .{
             .name = "file",
+            .tag = "Input",
             .long = "path",
             .short = 'p',
             .value = .{ .Argumentative = null },
@@ -135,6 +138,30 @@ pub fn main() !void {
         // do stuff
     }
     ...
+```
+
+## Printing Format
+The Flags struct has a method `usage()` that prints all flags with their respective tags. Tags that appear first in the array of the init flags are printed first. Whether the flags without tags are printed first or last can be change with the config option `untaggedFirst: bool`.
+```zsh
+  Switches:
+     -r, --recursive               Recurse into directories
+     -f, --force                   Skip confirmation prompts
+
+  Input:
+     -p <file>, --path <file>      Path to file
+```
+
+Individual flags`: Type.Flag` can also be printed with their `format()` method via `{f}` print format. The left-padding and the padding between the flags and their descriptions can be changed with the `.padding` variable in the `Type.Flag` struct.
+```zig
+// e.g.
+// This affects the printing of `Type.Flags.usage()` too
+flagparse.Type.Flag.padding = {
+    .left = 1,
+    .center = 20,
+}
+```
+```zsh
+ -r, --recursive     Recurse into directories
 ```
 
 ## Errors
