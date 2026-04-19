@@ -115,7 +115,7 @@ pub fn main() !void {
     ...
     // returns a tuple of Flags and resulting args
     // resulting args is a maybe value
-    const result = flagparse.parse(&arena.allocator(), &min.args, initflags, &errptr, .{}) catch |err| {
+    const result = flagparse.parse(arena.allocator(), &min.args, initflags, &errptr, .{}) catch |err| {
         // handle err
         return;
     };
