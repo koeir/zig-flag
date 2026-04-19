@@ -1,7 +1,6 @@
 const std = @import("std");
 const root = @import("root.zig");
 
-
 // Init struct for simpler syntax
 pub const OutArgs = struct {
     args: ?[][:0]const u8 = null,
@@ -60,6 +59,26 @@ pub const Argumentative = ?[:0]const u8;
 
 pub const FlagType = enum {
     Switch, Argumentative
+};
+
+pub const ParseResult = struct {
+    flags: Flags,
+    argv: ?[][:0]const u8,
+
+    pub fn init(
+        allocator: *const std.mem.Allocator, 
+        args: *const std.process.Args,
+        comptime init_flags: Flags, 
+        errptr: *?[*:0]const u8, 
+        cfg: ParseConfig
+    ) !ParseResult {
+        return try root.parse(allocator, args, init_flags, errptr, cfg);
+    }
+
+    pub fn deinit(self: *const @This(), allocator: std.mem.Allocator) void {
+        allocator.free(self.flags.list);
+        allocator.free(self.argv orelse return);
+    }
 };
 
 pub const FlagVal = union(FlagType) {

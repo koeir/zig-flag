@@ -9,7 +9,7 @@ pub fn parse(
     comptime init_flags: Type.Flags,
     errptr: *?[*:0]const u8,
     cfg: Type.ParseConfig,
-) !struct { flags: Type.Flags, argv: ?[][:0]const u8 } {
+) !Type.ParseResult {
     if (cfg.verbose == true and cfg.writer == null) return error.NoWriter;
     defer if (cfg.verbose) cfg.writer.?.flush()catch{};
 

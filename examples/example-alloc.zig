@@ -14,15 +14,14 @@ pub fn main(init: std.process.Init) !void {
     defer stdout.flush() catch {};
 
     var gpa = std.heap.DebugAllocator(.{}){};
-    var fba: std.heap.ArenaAllocator = .init(gpa.allocator());
-    defer fba.deinit();
+    defer if (gpa.deinit() == std.heap.Check.leak) @panic("MEMORY LEAK");
 
     // points to last arg on error
     // not necessarily the arg that caused the error
     var errptr: ?[*:0]const u8 = null;
 
     // actual parse, returns a tuple of Flags and resulting args
-    const result = flagparse.parse(&fba.allocator(), &min.args, initflags, &errptr,
+    const result = flagparse.Type.ParseResult.init(&gpa.allocator(), &min.args, initflags, &errptr,
     .{ .allowDups = false, .verbose = true, .writer = stderr, .prefix = "my-program: " }) catch |err| {
         if (err != flagparse.Type.FlagErrs.ArgNoArg) return;
 
@@ -46,7 +45,7 @@ pub fn main(init: std.process.Init) !void {
         }
 
         return;
-    };
+    }; defer result.deinit(gpa.allocator());
 
     // retrieve tuple values
     const flags: flagparse.Type.Flags = result.flags;
