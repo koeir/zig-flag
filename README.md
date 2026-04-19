@@ -15,6 +15,7 @@ A simple flag parser for Zig programs.
 - **writer**: Required when using verbose option. Doesn't really do anything without it. _Default is null_.
 - **prefix**: Print out a custom string for verbose messages. _Default is null_.
 - **allowDashAsFirstCharInArgForArg**: I admit this needs a better name. It allows argumentative type flags (meaning flags that hold a string/arg) to hold strings that begin with "-". _Default is true_.
+- **errOnNoArgs**: Outputs an error if there are no arguments except argv[0]. _Default is false_
 
 ## Usage
 
@@ -90,7 +91,6 @@ const std = @import("std");
 const flagparse = @import("flagparse");
 
 pub fn main(init: std.process.Init) !void {
-    ...
     const io = init.io;
     const min = init.minimal;
 
