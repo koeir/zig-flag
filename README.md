@@ -129,10 +129,10 @@ pub fn main() !void {
     ...
     // retrieve tuple values
     const flags: flagparse.Type.Flags = result.flags;
-    const flagless_args = result.argv;
+    const flagless_args: ?[][:0]const u8 = result.argv;
 
-    const recursive: bool = try flags.get_value("recursive", flagparse.Type.Switch);
-    const file = try flags.get_value("file", flagparse.Type.Argumentative);
+    const recursive: bool = flags.value("recursive", flagparse.Type.Switch).?;
+    const file: ?[:0]const u8 = flags.value("file", flagparse.Type.Argumentative).?;
 
     if (flagless_args) |args| {
         // do stuff
