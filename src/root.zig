@@ -6,7 +6,7 @@ pub const Type = @import("Type.zig");
 pub fn parse(
     allocator: std.mem.Allocator,
     args: std.process.Args,
-    comptime init_flags: Type.Flags,
+    comptime defaults: Type.Flags,
     errptr: *?[*:0]const u8,
     cfg: Type.ParseConfig,
 ) !Type.ParseResult {
@@ -21,9 +21,9 @@ pub fn parse(
     };
 
     // Initialize the parsed flags
-    var out_flags = try allocator.alloc(Type.Flag, init_flags.list.len);
+    var out_flags = try allocator.alloc(Type.Flag, defaults.list.len);
     errdefer allocator.free(out_flags);
-    for (init_flags.list, 0..) |value, i| out_flags[i] = value;
+    for (defaults.list, 0..) |value, i| out_flags[i] = value;
 
     // Use buffer
     var out_args = Type.OutArgs{};
@@ -48,8 +48,12 @@ pub fn parse(
         };
 
         switch (fmt) {
-            .Short => try helpers.parse_chain(&args_iter, out_flags, init_flags, cfg),
-            .Long => try helpers.parse_long(&args_iter, out_flags, init_flags, cfg)
+            .Long   => try helpers.parse_flag(arg[2..], fmt, out_flags, defaults, &args_iter, cfg),
+            .Short  => {
+                for (arg[1..]) |c| {
+                    try helpers.parse_flag(&[_]u8 {c}, fmt, out_flags, defaults, &args_iter, cfg);
+                }
+            },
         }
     }
 

@@ -5,115 +5,41 @@ const Flag = root.Type.Flag;
 const Flags = root.Type.Flags;
 const FlagErrs = root.Type.FlagErrs;
 
-// Finds and sets the values for flags that have been called in long form
-pub fn parse_long(
-    args: *root.Type.ArgIterator,
+pub fn parse_flag(
+    arg: []const u8, 
+    fmt : root.Type.FlagFmt,
     flags: []Flag,
     comptime defaults: Flags,
+    args: *root.Type.ArgIterator,
     cfg: root.Type.ParseConfig
 ) !void {
-    var flag: *Flag = try get_long_flag(flags, args.current().?[2..], cfg);
+    const flag: *Flag = blk: switch (fmt) {
+        .Long => break :blk try get_long_flag(flags, arg, cfg),
+        .Short => break :blk try get_short_flag(flags, arg[0], cfg),
+    };
 
-    try checkdup(flag, defaults, root.Type.FlagFmt.Long, cfg);
+    const isDefault = try flag.isDefault(defaults);
+    if (!isDefault and !cfg.allowDups)
+        return root.Type.FlagErrs.DuplicateFlag;
 
     switch (flag.value) {
-        .Switch => {
-            // Toggle if not dup
-            try flag.toggle();
-        },
-
         .Argumentative => {
             const next_arg = args.next() orelse {
-                if (!cfg.verbose) return FlagErrs.ArgNoArg;
-
-                if (cfg.prefix) |prefix| try cfg.writer.?.print("{s}", .{prefix});
-                try cfg.writer.?.print("No argument supplied for --{s}\n", .{flag.long.?});
-
-                return FlagErrs.ArgNoArg;
+                return root.Type.FlagErrs.ArgNoArg;
             };
 
-            try check_nextarg(flag, next_arg, root.Type.FlagFmt.Long, cfg);
+            if (next_arg[0] == '-' or
+                !cfg.allowDashAsFirstCharInArgForArg) {
+                return root.Type.FlagErrs.ArgNoArg;
+            }
 
             try flag.set_arg(next_arg);
         },
-    }
-}
 
-// Same thing but for short flags + chained
-pub fn parse_chain(
-    args: *root.Type.ArgIterator,
-    flags: []Flag,
-    comptime defaults: Flags,
-    cfg: root.Type.ParseConfig
-) !void {
-    const chain: []const u8 = args.current().?[1.. :0];
-
-    for (chain) |c| {
-        var flag: *Flag = try get_short_flag(flags, c, cfg);
-
-        try checkdup(flag, defaults, root.Type.FlagFmt.Short, cfg);
-
-        switch (flag.value) {
-            .Switch => {
-                try flag.toggle();
-            },
-
-            .Argumentative => {
-                const next_arg = args.next() orelse {
-                    if (!cfg.verbose) return FlagErrs.ArgNoArg;
-
-                    if (cfg.prefix) |prefix|
-                        try cfg.writer.?.print("{s}", .{prefix});
-                    try cfg.writer.?.print("No argument supplied for -{c}\n", .{flag.short.?});
-
-                    return FlagErrs.ArgNoArg;
-                };
-
-                try check_nextarg(flag, next_arg, root.Type.FlagFmt.Short, cfg);
-
-                try flag.set_arg(next_arg);
-            },
+        .Switch => {
+            // Only toggle if not already toggled
+            if (isDefault) try flag.toggle();
         }
-    }
-}
-
-pub fn check_nextarg(
-    flag: *const Flag,
-    arg: []const u8,
-    fmt: root.Type.FlagFmt, cfg: root.Type.ParseConfig
-) !void {
-    if (arg[0] != '-' or cfg.allowDashAsFirstCharInArgForArg) return;
-    if (!cfg.verbose) return FlagErrs.ArgNoArg;
-
-    if (cfg.prefix) |prefix|
-        try cfg.writer.?.print("{s}", .{prefix});
-    try cfg.writer.?.print("'{s}' is not a valid argument supplied for: ", .{arg});
-    switch (fmt) {
-        .Long => try cfg.writer.?.print("--{s}\n", .{flag.long.?}),
-        .Short => try cfg.writer.?.print("-{c}\n", .{flag.short.?}),
-    }
-
-    return FlagErrs.ArgNoArg;
-}
-
-pub fn checkdup(
-    flag: *const Flag,
-    comptime defaults: Flags,
-    fmt: root.Type.FlagFmt,
-    cfg: root.Type.ParseConfig
-) !void {
-    if (!try flag.isDefault(defaults)) {
-        if (cfg.allowDups) return;
-        if (!cfg.verbose) return FlagErrs.DuplicateFlag;
-
-        if (cfg.prefix) |prefix|
-            try cfg.writer.?.print("{s}", .{prefix});
-        switch (fmt) {
-            .Long => try cfg.writer.?.print("{}: --{s}\n", .{ FlagErrs.DuplicateFlag, flag.long.? }),
-            .Short => try cfg.writer.?.print("{}: -{c}\n", .{ FlagErrs.DuplicateFlag, flag.short.? }),
-        }
-
-        return FlagErrs.DuplicateFlag;
     }
 }
 
@@ -151,23 +77,4 @@ pub fn get_short_flag(
     try cfg.writer.?.print("No such flag: -{c}\n", .{arg});
 
     return root.Type.FlagErrs.NoSuchFlag;
-}
-
-pub fn put_error(
-    errorbuf: []u8,
-    err: root.Type.FlagErrs,
-    args_iter: *root.Type.ArgIterator
-) !void {
-    // If its argnoarg and the end of argv hasn't been reached yet,
-    // the next arg *must* have been a flag, so -1 so that arg.index
-    // is on the erred flag
-    if (err == root.Type.FlagErrs.ArgNoArg and
-        args_iter.index != args_iter.count) args_iter.index -= 1;
-
-    if (errorbuf) |e| {
-        const current_arg = args_iter.current().?;
-
-        if (e.len < current_arg.len) return error.OutOfMemory;
-        @memcpy(e[0..current_arg.len], current_arg);
-    }
 }
