@@ -49,18 +49,32 @@ pub fn parse(
 
         switch (fmt) {
             .Long   => {
-                try helpers.parse_flag(
+                helpers.parse_flag(
                     arg[2..], fmt, 
                     out_flags, defaults, 
-                    &args_iter, cfg);
-                },
+                    &args_iter, cfg) catch |err| {
+                    if (!cfg.verbose) return err;
+
+                    if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
+                    try cfg.writer.?.print("{s}: {s}\n", .{ arg, error_message(err) orelse @errorName(err) });
+
+                    return err;
+                };
+            },
             .Short  => {
                 for (arg[1..]) |c| {
-                    try helpers.parse_flag(
+                    helpers.parse_flag(
                         &[_]u8 {c}, fmt, 
                         out_flags, defaults, 
                         &args_iter, cfg
-                    );
+                    ) catch |err| {
+                        if (!cfg.verbose) return err;
+
+                        if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
+                        try cfg.writer.?.print("-{c}: {s}\n", .{ c, error_message(err) orelse @errorName(err) });
+
+                        return err;
+                    };
                 }
             },
         }
@@ -92,11 +106,11 @@ pub fn flagfmt(arg: []const u8) ?Type.FlagFmt {
 // does not include errors that should not
 // appear in production
 pub fn error_message(err: Type.FlagErrs) ?[]const u8 {
-    switch (err) {
-        .NoArgs =>      return "Missing arguments",
-        .NoSuchFlag     => return "No such flag",
-        .DuplicateFlag  => return "Duplicate flag",
-        .ArgNoArg       => return "No argument supplied",
-        else            => return null,
-    }
+    return switch (err) {
+        error.NoArgs         => "Missing arguments",
+        error.NoSuchFlag     => "No such flag",
+        error.DuplicateFlag  => "Duplicate flag",
+        error.ArgNoArg       => "No argument supplied",
+        else            => null,
+    };
 }

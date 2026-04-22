@@ -12,7 +12,7 @@ pub fn parse_flag(
     comptime defaults: Flags,
     args: *root.Type.ArgIterator,
     cfg: root.Type.ParseConfig
-) !void {
+) FlagErrs!void {
     const flag: *Flag = blk: switch (fmt) {
         .Long => break :blk try get_long_flag(flags, arg),
         .Short => break :blk try get_short_flag(flags, arg[0]),
@@ -46,17 +46,17 @@ pub fn parse_flag(
 pub fn get_long_flag(
     flags: []root.Type.Flag,
     arg: []const u8,
-) !*root.Type.Flag {
+) FlagErrs!*Flag {
     for (flags) |*flag| {
         if (std.mem.eql(u8, flag.long orelse continue, arg)) return flag;
-    } return root.Type.FlagErrs.NoSuchFlag;
+    } return FlagErrs.NoSuchFlag;
 }
 
 pub fn get_short_flag(
     flags: []root.Type.Flag,
     arg: u8,
-) !*root.Type.Flag {
+) FlagErrs!*root.Type.Flag {
     for (flags) |*flag| {
         if (arg == flag.short orelse continue) return flag;
-    } return root.Type.FlagErrs.NoSuchFlag;
+    } return FlagErrs.NoSuchFlag;
 }
