@@ -16,33 +16,20 @@ pub fn main(init: std.process.Init) !void {
     var gpa = std.heap.DebugAllocator(.{}){};
     defer if (gpa.deinit() == std.heap.Check.leak) @panic("MEMORY LEAK");
 
-    // points to last arg on error
-    // not necessarily the arg that caused the error
-    var errptr: ?[*:0]const u8 = null;
+    // points to erred flag
+    var errptr: ?[]const u8 = null;
 
     // actual parse, returns a tuple of Flags and resulting args
     const result = flagparse.parse(gpa.allocator(), min.args, initflags, &errptr,
     .{ .allowDups = false, .verbose = true, .writer = stderr, .prefix = "my-program: " }) catch |err| {
         if (err != flagparse.Type.FlagErrs.ArgNoArg) return;
 
-        const arg: []const u8 = std.mem.span(errptr orelse return);
-        const fmt = flagparse.flagfmt(arg) orelse return;
-        var flagtmp: *const flagparse.Type.Flag = undefined;
+        const arg: []const u8 = errptr orelse return;
+        const flagtmp = initflags.get_with_flag(arg) orelse return;
 
         // "Usage" output when parse fails
-        try stdout.writeAll("Usage:\n");
-        switch (fmt) {
-            .Long   => {
-                flagtmp = initflags.get_with_flag(arg[2..]).?;
-                try stdout.print("{f}\n", .{ flagtmp.* });
-            },
-            .Short  => {
-                for (arg[1..]) |c| {
-                    flagtmp = initflags.get_with_flag(&[_]u8 {c}) orelse continue;
-                    try stdout.print("{f}\n", .{ flagtmp.* });
-                }
-            }
-        }
+        try stdout.writeAll("\nUsage:\n");
+        try stdout.print("{f}\n", .{ flagtmp.* });
 
         return;
     }; defer result.deinit(gpa.allocator());

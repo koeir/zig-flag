@@ -7,7 +7,7 @@ pub fn parse(
     allocator: std.mem.Allocator,
     args: std.process.Args,
     comptime defaults: Type.Flags,
-    errptr: *?[*:0]const u8,
+    errptr: *?[]const u8,
     cfg: Type.ParseConfig,
 ) !Type.ParseResult {
     if (cfg.verbose == true and cfg.writer == null) return error.NoWriter;
@@ -28,11 +28,6 @@ pub fn parse(
     // Use buffer
     var out_args = Type.OutArgs{};
     errdefer if (out_args.args) |value| allocator.free(value);
-
-    // put current arg in iteration in errptr on error
-    errdefer if (args_iter.index > 1) {
-        errptr.* = args.vector[args_iter.index-1];
-    };
 
     if (!args_iter.skip()) return error.NoArgs;
     while (args_iter.next()) |arg| {
@@ -58,11 +53,12 @@ pub fn parse(
                     if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
                     try cfg.writer.?.print("{s}: {s}\n", .{ arg, error_message(err) orelse @errorName(err) });
 
+                    errptr.* = arg[2..];
                     return err;
                 };
             },
             .Short  => {
-                for (arg[1..]) |c| {
+                for (arg[1..], 1..) |c, i| {
                     helpers.parse_flag(
                         &[_]u8 {c}, fmt, 
                         out_flags, defaults, 
@@ -73,6 +69,7 @@ pub fn parse(
                         if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
                         try cfg.writer.?.print("-{c}: {s}\n", .{ c, error_message(err) orelse @errorName(err) });
 
+                        errptr.* = arg[i..i+1];
                         return err;
                     };
                 }
