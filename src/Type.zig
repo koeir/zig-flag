@@ -44,8 +44,6 @@ pub const FlagErrs = error {
     FlagNotArg,         // non-argumentative flag treated as an argumentative
     DuplicateFlag,
     ArgNoArg,           // no argument given to argumentative flag
-    ArgTooLong,
-    OutOfMemory,
     NoWriter,
     TypeMismatch,       // failure to retrieve value, type given does not match value
 };
