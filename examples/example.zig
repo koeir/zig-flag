@@ -22,7 +22,7 @@ pub fn main(init: std.process.Init) !void {
     // actual parse, returns a tuple of Flags and resulting args
     const result = flagparse.parse(gpa.allocator(), min.args, initflags, &errptr,
     .{ .allowDups = false, .verbose = true, .writer = stderr, .prefix = "my-program: ", .errOnNoArgs = true, }, ) catch |err| {
-        if (err != flagparse.Type.FlagErrs.ArgNoArg) return;
+        if (err != flagparse.Type.FlagError.ArgNoArg) return;
 
         const arg: []const u8 = errptr orelse return;
         const flagtmp = initflags.get_with_flag(arg) orelse return;

@@ -3,7 +3,7 @@ const root = @import("root.zig");
 
 const Flag = root.Type.Flag;
 const Flags = root.Type.Flags;
-const FlagErrs = root.Type.FlagErrs;
+const FlagError = root.Type.FlagError;
 
 pub fn parse_flag(
     arg: []const u8, 
@@ -11,7 +11,7 @@ pub fn parse_flag(
     flags: []Flag,
     args: *root.Type.ArgIterator,
     cfg: root.Type.ParseConfig
-) FlagErrs!void {
+) FlagError!void {
     const flag: *Flag = blk: switch (fmt) {
         .Long => break :blk try get_long_flag(flags, arg),
         .Short => break :blk try get_short_flag(flags, arg[0]),
@@ -19,17 +19,17 @@ pub fn parse_flag(
 
     const isDefault = flag.isDefault();
     if (!isDefault and !cfg.allowDups)
-        return root.Type.FlagErrs.DuplicateFlag;
+        return root.Type.FlagError.DuplicateFlag;
 
     switch (flag.value) {
         .Argumentative => {
             const next_arg = args.next() orelse {
-                return root.Type.FlagErrs.ArgNoArg;
+                return root.Type.FlagError.ArgNoArg;
             };
 
             if (next_arg[0] == '-' or
                 !cfg.allowDashAsFirstCharInArgForArg) {
-                return root.Type.FlagErrs.ArgNoArg;
+                return root.Type.FlagError.ArgNoArg;
             }
 
             try flag.set_arg(next_arg);
@@ -45,17 +45,17 @@ pub fn parse_flag(
 pub fn get_long_flag(
     flags: []root.Type.Flag,
     arg: []const u8,
-) FlagErrs!*Flag {
+) FlagError!*Flag {
     for (flags) |*flag| {
         if (std.mem.eql(u8, flag.long orelse continue, arg)) return flag;
-    } return FlagErrs.NoSuchFlag;
+    } return FlagError.NoSuchFlag;
 }
 
 pub fn get_short_flag(
     flags: []root.Type.Flag,
     arg: u8,
-) FlagErrs!*root.Type.Flag {
+) FlagError!*root.Type.Flag {
     for (flags) |*flag| {
         if (arg == flag.short orelse continue) return flag;
-    } return FlagErrs.NoSuchFlag;
+    } return FlagError.NoSuchFlag;
 }

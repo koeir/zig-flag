@@ -37,7 +37,7 @@ pub const OutArgs = struct {
     }
 };
 
-pub const FlagErrs = error {
+pub const FlagError = error {
     NoArgs,
     NoSuchFlag,
     FlagNotSwitch,      // non-switch/non-bool Flag treated as a switch/bool
@@ -145,10 +145,10 @@ pub const Flags = struct {
     }
 
     // errs if not found
-    pub fn try_get(self: *const Self, name: []const u8) FlagErrs!*const Flag {
+    pub fn try_get(self: *const Self, name: []const u8) FlagError!*const Flag {
         return for (self.list) |flag| {
             if (std.mem.eql(u8, flag.name, name)) break &flag;
-        } else FlagErrs.NoSuchFlag;
+        } else FlagError.NoSuchFlag;
     }
 
     pub fn get_with_flag(self: *const Self, flag: []const u8) ?*const Flag {
@@ -163,7 +163,7 @@ pub const Flags = struct {
         } else null;
     }
 
-    pub fn get_value(self: *const Self, name: []const u8, comptime T: type) FlagErrs!T {
+    pub fn get_value(self: *const Self, name: []const u8, comptime T: type) FlagError!T {
         const flag = try try_get(self, name);
 
         // looks ugly but is stupidly necessary to be hardwritten
@@ -171,12 +171,12 @@ pub const Flags = struct {
         switch (flag.value) {
             .Switch => |val| {
                 if (@TypeOf(val) != T) {
-                    return FlagErrs.TypeMismatch;
+                    return FlagError.TypeMismatch;
                 } return val;
             },
             .Argumentative => |val| {
                 if (@TypeOf(val) != T) {
-                    return FlagErrs.TypeMismatch;
+                    return FlagError.TypeMismatch;
                 } return val;
             }
         }
@@ -277,13 +277,13 @@ pub const Flag = struct {
     pub fn toggle(self: *Flag) !void {
         switch (self.value) {
             .Switch => |*val| val.* = !val.*,
-            else    => return FlagErrs.FlagNotSwitch,
+            else    => return FlagError.FlagNotSwitch,
         }
     }
 
     pub fn set_arg(self: *Flag, arg: [:0]const u8) !void {
         switch (self.value) {
-            .Switch => return FlagErrs.FlagNotArg,
+            .Switch => return FlagError.FlagNotArg,
             .Argumentative => |*val| {
                 val.* = arg;
             }

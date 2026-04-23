@@ -33,7 +33,7 @@ pub fn parse(
     errdefer if (out_args.args) |value| allocator.free(value);
 
     var isErred = false;
-    var out_error: Type.FlagErrs = undefined;
+    var out_error: Type.FlagError = undefined;
     if (!args_iter.skip()) return error.NoArgs;
     while (args_iter.next()) |arg| {
         const fmt: Type.FlagFmt = flagfmt(arg) orelse {
