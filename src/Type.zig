@@ -270,7 +270,7 @@ pub const Flag = struct {
     pub const Padding = struct {
         left: usize = 1,
         center: usize = 30,
-
+        style: u8 = ' ',
     };
 
     pub var padding = Padding{};
@@ -327,31 +327,31 @@ pub const Flag = struct {
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
         // Don't change the actual padding var
-        var tmp_padding = padding;
+        var minus: usize = 0;
 
-        while (tmp_padding.left > 0) : (tmp_padding.left -= 1) {
+        for (0..padding.left) |_| {
             try writer.writeAll(" ");
         }
 
         if (self.short) |short| {
             try writer.print("-{c}", .{ short });
-            tmp_padding.center -= 2;
+            minus += 2;
 
             switch (self.value) {
                 .Argumentative => {
                     try writer.print(" <{s}>", .{ self.name });
-                    tmp_padding.center -= self.name.len + 3;
+                    minus += self.name.len + 3;
                 },
                 else => {},
             }
 
             if (self.long) |_| {
                 try writer.writeAll(", ");
-                tmp_padding.center -= 2;
+                minus += 2;
             }
         } else {
             try writer.writeAll("    ");
-            tmp_padding.center -= 4;
+            minus += 4;
         }
 
         if (self.long) |long| {
@@ -359,18 +359,26 @@ pub const Flag = struct {
             switch (self.value) {
                 .Argumentative => {
                     try writer.print(" <{s}>", .{ self.name });
-                    tmp_padding.center -= self.name.len + 3;
+                    minus += self.name.len + 3;
                 },
                 else => {},
             }
-            tmp_padding.center -= long.len + 2;
+            minus += long.len + 2;
         }
 
-        while (tmp_padding.center > 0) : (tmp_padding.center-= 1) {
-            try writer.writeAll(" ");
-        }
+        if (padding.center < minus) @panic("Need more center-padding!");
 
-        if (self.desc) |desc| try writer.writeAll(desc);
+        for (0..padding.center-minus-1) |_| {
+            try writer.writeAll(&[_]u8 { padding.style });
+        } try writer.writeAll(" ");
+
+        if (self.desc == null) return;
+        for (self.desc.?) |c| {
+            try writer.print("{c}", .{c});
+            if (c == '\n') {
+                for (0..padding.center+padding.left) |_| try writer.writeAll(" ");       
+            } 
+        }
     }
 };
 
