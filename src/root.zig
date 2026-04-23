@@ -123,7 +123,7 @@ pub fn flagfmt(arg: []const u8) ?Type.FlagFmt {
 // returns error messages for flag errors
 // does not include errors that should not
 // appear in production
-pub fn error_message(err: Type.FlagErrs) ?[]const u8 {
+pub fn error_message(err: anyerror) ?[]const u8 {
     return switch (err) {
         error.NoArgs         => "Missing arguments",
         error.NoSuchFlag     => "No such flag",
