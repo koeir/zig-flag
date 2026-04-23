@@ -181,7 +181,6 @@ pub const FlagErrs = error {
     FlagNotArg,         // non-argumentative flag treated as an argumentative
     DuplicateFlag,      // flag appears twice in arg list; can be ignored with config
     ArgNoArg,           // no argument given to argumentative flag
-    OutOfMemory,        // something's size exceeds its buffers len
     NoWriter,           // no writer given when verbose is true
     TypeMismatch,       // a more general FlagNotSwitch/FlagNotArg
 }
