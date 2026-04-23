@@ -29,6 +29,8 @@ pub fn parse(
     var out_args = Type.OutArgs{};
     errdefer if (out_args.args) |value| allocator.free(value);
 
+    var isErred = false;
+    var out_error: Type.FlagErrs = undefined;
     if (!args_iter.skip()) return error.NoArgs;
     while (args_iter.next()) |arg| {
         const fmt: Type.FlagFmt = flagfmt(arg) orelse {
@@ -48,13 +50,17 @@ pub fn parse(
                     arg[2..], fmt, 
                     out_flags, defaults, 
                     &args_iter, cfg) catch |err| {
-                    if (!cfg.verbose) return err;
+                    isErred = true;
 
-                    if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
-                    try cfg.writer.?.print("{s}: {s}\n", .{ arg, error_message(err) orelse @errorName(err) });
+                    if (cfg.verbose) {
+                        if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
+                        try cfg.writer.?.print("{s}: {s}\n", .{ arg, 
+                            error_message(err) orelse @errorName(err) });
+                    }
 
+                    out_error = err;
                     errptr.* = arg[2..];
-                    return err;
+                    if (cfg.exitFirstErr) return err;
                 };
             },
             .Short  => {
@@ -64,20 +70,31 @@ pub fn parse(
                         out_flags, defaults, 
                         &args_iter, cfg
                     ) catch |err| {
-                        if (!cfg.verbose) return err;
+                        isErred = true;
+                        if (cfg.verbose){
+                            if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
+                            try cfg.writer.?.print("-{c}: {s}\n", .{ 
+                                c, error_message(err) orelse @errorName(err) });
+                        }
 
-                        if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
-                        try cfg.writer.?.print("-{c}: {s}\n", .{ c, error_message(err) orelse @errorName(err) });
-
+                        out_error = err;
                         errptr.* = arg[i..i+1];
-                        return err;
+                        if (cfg.exitFirstErr) return err;
                     };
                 }
             },
         }
     }
 
-    if (args_iter.index == 1 and cfg.errOnNoArgs) return error.NoArgs;
+    if (isErred) return out_error;
+    if (args_iter.index == 1 and cfg.errOnNoArgs) {
+        if (!cfg.verbose) return error.NoArgs;
+
+        if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
+        try cfg.writer.?.print("{s}\n", .{ error_message(error.NoArgs).? });
+
+        return error.NoArgs;
+    }
 
     // shrink out_args because it's guaranteed to be <= args
     try out_args.resize(allocator);

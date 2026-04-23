@@ -369,4 +369,5 @@ pub const ParseConfig = struct {
     allowDashAsFirstCharInArgForArg: bool = true,
     errOnNoArgs: bool = false,
     prefix: ?[]const u8 = null,
+    exitFirstErr: bool = true,
 };
