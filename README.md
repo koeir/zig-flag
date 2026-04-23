@@ -185,11 +185,13 @@ Individual flags`: Type.Flag` can also be printed with their `format()` method v
 flagparse.Type.Flag.padding = {
     .left = 1,
     .center = 20,
+    .style = '.'    // change what is printed between the flags and descriptions
+                    // default is whitespace (' ')
 }
 ```
 
 ```zsh
- -r, --recursive     Recurse into directories
+ -r, --recursive.... Recurse into directories
 ```
 
 ## Errors
