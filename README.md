@@ -10,6 +10,8 @@ A simple flag parser for Zig programs.
 
 ## Config Options
 
+### Parse Config
+
 - **allowDups**: Don't error when duplicate flags are set. _Default is false_.
 - **verbose**: Print out error messages when errors occur. _Default is false_.
 - **writer**: Required when using verbose option. Doesn't really do anything without it. _Default is null_.
@@ -17,6 +19,14 @@ A simple flag parser for Zig programs.
 - **allowDashAsFirstCharInArgForArg**: I admit this needs a better name. It allows argumentative type flags (meaning flags that hold a string/arg) to hold strings that begin with "-". _Default is true_.
 - **errOnNoArgs**: Outputs an error if there are no arguments except argv[0]. _Default is false_
 - **exitFirstErr**: Exit on first error found. _Default is true_.
+
+### Usage Config
+
+Config for `Type.Flags.usage()` method
+
+- **padding_left**: Number of whitespaces before the tag. _Default is 0_
+- **printUntagged**: Print untagged flags. \_Default is false.
+- **untaggedFirst**: Print untagged flags first. Prints last when false. _Default is true_.
 
 ## Usage
 
@@ -55,19 +65,30 @@ const initflags: flagparse.Type.Flags = .{
         .{
             .name = "recursive",
             .tag = "Switches",
-            .long = "recursive",      // long flags and short flags are maybe values;
-            .short = 'r',             // if both are missing then they can't... be set
+            .long = "recursive",        // long flags and short flags are maybe values;
+            .short = 'r',               // if both are missing then they can't... be set
             .value = .{ .Switch = false },
             .desc = "Recurse into directories",
         },
-
         .{
-            .name = "force",
-            .tag = "Switches",
+            .name = "force",            // will not be printed because Type.UsageConfig.printUntagged is false by default
             .long = "force",
-            .short = 'f',
             .value = .{ .Switch = false },
             .desc = "Skip confirmation prompts",
+        },
+        .{
+            .name = "noForce",
+            .long = "no-force",
+            .value = .{ .Switch = false },
+            .desc = "Do not skip confirmation prompts",
+        },
+        .{
+            .name = "force-vanity",     // 'vanity'; shows in usage(), but cannot be toggled
+            .tag = "Switches",
+            .long = "[no-]force",
+            .isVanity = true,
+            .value = .{ .Switch = false }, //value doesn't matter because it's vanity
+            .desc = "Don't skip/skip confirmation prompts",
         },
 
         // Arguments will accept the next argv
@@ -150,7 +171,7 @@ The Flags struct has a method `usage()` that prints all flags with their respect
 ```zsh
   Switches:
      -r, --recursive               Recurse into directories
-     -f, --force                   Skip confirmation prompts
+         --[no-]force              Don\'t skip/skip confirmation prompts
 
   Input:
      -p <file>, --path <file>      Path to file
