@@ -47,7 +47,7 @@ pub fn main(init: std.process.Init) !void {
     flagparse.Type.Flag.padding = .{
         .left = 5,
         .center = 30,
-        .style = '.',
+        .style = ' ', // default
     };
 
     try stdout.writeAll("Toggled flags:\n");
