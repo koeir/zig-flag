@@ -87,6 +87,9 @@ pub fn main(init: std.process.Init) !void {
     try initflags.usage(stdout, .{ .padding_left = 2, .tagStyle = .brackets });
 }
 
+const Switch = flagparse.Type.Switch;
+const Argumentative = flagparse.Type.Argumentative;
+
 // Initialize flags and their default values
 // name doesn't really matter as long as the
 // members are all of type flagparse
@@ -98,7 +101,7 @@ const initflags: flagparse.Type.Flags = .{
             .tag = "Switches",
             .long = "recursive",
             .short = 'r',
-            .value = .{ .Switch = false },
+            .value = Switch,
             .desc = "Recurse into directories",
         },
         .{
@@ -107,14 +110,14 @@ const initflags: flagparse.Type.Flags = .{
             .long = "force",
             .short = 'f',
             .vanity = "-[n|f], --[no-]force",
-            .value = .{ .Switch = false },
+            .value = Switch,
             .desc = "Skip confirmation prompts",
         },
         .{  // by default, untagged flags will not be printed
             .name = "no-force",
             .long = "no-force",
             .short = 'n',
-            .value = .{ .Switch = false },
+            .value = Switch,
             .desc = "Do not skip confirmation prompts",
         },
         // Arguments will accept the next argv
@@ -125,7 +128,7 @@ const initflags: flagparse.Type.Flags = .{
             .tag = "Input",
             .long = "path",
             .short = 'p',
-            .value = .{ .Argumentative = null },
+            .value = Argumentative,
             .desc = "Path to file",
         },
     }
