@@ -59,38 +59,37 @@ zig fetch --save https://github.com/koeir/flagparse/archive/refs/tags/v0.x.x.tar
 2. Declare a list of flags with the built-in structs
 
 ```zig
+
+const Switch = flagparse.Type.Switch;
+const Argumentative = flagparse.Type.Argumentative;
+
 const initflags: flagparse.Type.Flags = .{
     .list = &[_] flagparse.Type.Flag
     {
         .{
             .name = "recursive",
             .tag = "Switches",
-            .long = "recursive",        // long flags and short flags are maybe values;
-            .short = 'r',               // if both are missing then they can't... be set
-            .value = .{ .Switch = false },
+            .long = "recursive",
+            .short = 'r',
+            .value = Switch,        // a different default value can be set with .{ Switch/Argumentative = <value> }
             .desc = "Recurse into directories",
         },
         .{
-            .name = "force",            // will not be printed because Type.UsageConfig.printUntagged is false by default
+            .name = "force",
+            .tag = "Switches",
             .long = "force",
-            .value = .{ .Switch = false },
+            .short = 'f',
+            .vanity = "-[n|f], --[no-]force",
+            .value = Switch,
             .desc = "Skip confirmation prompts",
         },
-        .{
-            .name = "noForce",
+        .{  // by default, untagged flags will not be printed
+            .name = "no-force",
             .long = "no-force",
-            .value = .{ .Switch = false },
+            .short = 'n',
+            .value = Switch,
             .desc = "Do not skip confirmation prompts",
         },
-        .{
-            .name = "force-vanity",     // 'vanity'; shows in usage(), but cannot be toggled
-            .tag = "Switches",
-            .long = "[no-]force",
-            .isVanity = true,
-            .value = .{ .Switch = false }, //value doesn't matter because it's vanity
-            .desc = "Don't/skip confirmation prompts",
-        },
-
         // Arguments will accept the next argv
         // e.g. -prf noob
         // "noob" will be accepted as the file
@@ -99,7 +98,7 @@ const initflags: flagparse.Type.Flags = .{
             .tag = "Input",
             .long = "path",
             .short = 'p',
-            .value = .{ .Argumentative = null },
+            .value = Argumentative,
             .desc = "Path to file",
         },
     }
@@ -185,7 +184,7 @@ Individual flags`: Type.Flag` can also be printed with their `format()` method v
 flagparse.Type.Flag.fmt = {
     .style = '.',       // change what is printed between the flags and descriptions; default is whitespace (' ')
     .columns= .two,     // flags and descriptions as one/two columns; default is .two
-    .left = 1,        
+    .left = 1,
     .center = 20,
 }
 ```
@@ -195,6 +194,7 @@ flagparse.Type.Flag.fmt = {
 ```
 
 More examples:
+
 ```zig
     // Different style
     flagparse.Type.Flag.fmt = .{
@@ -207,6 +207,7 @@ More examples:
     try stdout.writeAll("\nUsage:\n\n");
     try initflags.usage(stdout, .{ .padding_left = 2, .tagStyle = .brackets });
 ```
+
 ```zsh
 Usage:
 
