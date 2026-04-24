@@ -291,9 +291,9 @@ pub const FlagErrs = error {
     NoArgs,             // argc < 2
     NoSuchFlag,         // unrecognized flag in arg list
     FlagNotSwitch,      // non-switch/non-bool Flag treated as a switch/bool
-    FlagNotArg,         // non-argumentative flag treated as an argumentative
+    FlagNotArg,         // non-input type flag treated as an input type
     DuplicateFlag,      // flag appears twice in arg list; can be ignored with config
-    ArgNoArg,           // no argument given to argumentative flag
+    ArgNoArg,           // no argument given to input type flag
     NoWriter,           // no writer given when verbose is true
     TypeMismatch,       // a more general FlagNotSwitch/FlagNotArg
 }
