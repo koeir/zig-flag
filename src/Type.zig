@@ -400,10 +400,10 @@ pub const Flag = struct {
         const padding = fmt.padding;
         _ = try self.print_flags(padding.left, writer);
 
-        const padding_left = padding.left + padding.desc_left;
+        const padding_left = padding.left + padding.desc_left - 1;
 
         try writer.writeAll("\n");
-        for (0..padding_left-1) |_| {
+        for (0..padding_left) |_| {
             try writer.writeAll(&[_]u8{fmt.style});
         }
 
