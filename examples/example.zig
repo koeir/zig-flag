@@ -83,8 +83,8 @@ pub fn main(init: std.process.Init) !void {
         },
         .style = ' ',  // default
     };
-    try stdout.writeAll("\nUsage:\n");
-    try initflags.usage(stdout, .{ .padding_left = 2 });
+    try stdout.writeAll("\nUsage:\n\n");
+    try initflags.usage(stdout, .{ .padding_left = 2, .tagStyle = .brackets });
 }
 
 // Initialize flags and their default values
@@ -119,7 +119,7 @@ const initflags: flagparse.Type.Flags = .{
             .long = "[no-]force",
             .isVanity = true,
             .value = .{ .Switch = false }, //value doesn't matter because it's vanity
-            .desc = "[Don't skip/skip] confirmation prompts",
+            .desc = "Don't/skip confirmation prompts",
         },
         // Arguments will accept the next argv
         // e.g. -prf noob

@@ -190,6 +190,9 @@ pub const Flags = struct {
         padding_left: usize = 0,
         printUntagged: bool = false,
         untaggedFirst: bool = true,
+        tagStyle: enum {
+            brackets, colon
+        } = .colon
     };
 
     // can only be called by init flags
@@ -228,7 +231,11 @@ pub const Flags = struct {
             }
 
             // print all flags of the tag
-            try writer.print("{s}:\n", .{ tag });
+            switch (cfg.tagStyle) {
+                .colon    => try writer.print("{s}:\n", .{ tag }),
+                .brackets => try writer.print("[{s}]\n", .{ tag }),
+            }
+
             for (self.list) |f| {
                 if (!std.mem.eql(u8, f.tag orelse continue, tag)) continue;
                 try writer.print("{f}\n", .{ f });
