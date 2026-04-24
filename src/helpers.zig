@@ -28,7 +28,7 @@ pub fn parse_flag(
             };
 
             if (next_arg[0] == '-' and
-                !cfg.allowDashAsFirstCharInArgForArg) {
+                !cfg.allowDashInput) {
                 return root.Type.FlagError.ArgNoArg;
             }
 
