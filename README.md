@@ -79,7 +79,7 @@ const initflags: flagparse.Type.Flags = .{
             .tag = "Switches",
             .long = "force",
             .short = 'f',
-            .vanity = "-[n|f], --[no-]force",
+            .vanity = "-[n|f], --[no-]force",    // overwrites long and short flags in printing
             .value = Switch,
             .desc = "Skip confirmation prompts",
         },
@@ -152,8 +152,8 @@ pub fn main() !void {
     const flags = result.flags;
     const flagless_args = result.argv;
 
-    const recursive: bool = try flags.get_value("recursive", flagparse.Type.Switch);
-    const file: ?[:0]const u8 = try flags.get_value("file", flagparse.Type.Argumentative);
+    const recursive: bool = flags.get_value("recursive").?.Switch;
+    const file: ?[:0]const u8 = flags.get_value("file").?.Argumentative;
 
     if (recursive) // do stuff
 
@@ -164,19 +164,45 @@ pub fn main() !void {
 ```
 
 ## Printing Format
+```zig
+    // Type.Flag
+    pub const Format = struct {
+        fillerStyle: u8 = ' ',
+        greyOutFiller: bool = false,
+        greyOutDesc: bool = false,
+        columns: enum {
+            one, two
+        } = .two,
+        padding: struct {
+            left: usize = 1,
+            desc_left: usize = 1, // useless for columns.two; applied on top of .left
+            center: usize = 30, //useless for columns.one
+        } = .{},
+    };
 
-The Flags struct has a method `usage()` that prints all flags with their respective tags. Tags that appear first in the array of the init flags are printed first. Whether the flags without tags are printed first or last can be change with the config option `untaggedFirst: bool`.
+    // Type.Flags
+    pub const UsageConfig = struct {
+        padding_left: usize = 0,
+        printUntagged: bool = false,
+        untaggedFirst: bool = true,
+        tagStyle: enum {
+            brackets, colon, underline
+        } = .colon
+    };
+
+```
+The `Flags` struct has a method `usage()` that prints all flags with their respective tags. Tags are printed in the order that they first appear in the default flags.
 
 ```zsh
   Switches:
      -r, --recursive               Recurse into directories
-         --[no-]force              Don\'t/skip confirmation prompts
+     -[n|f], --[no-]force          Don\'t/skip confirmation prompts
 
   Input:
      -p <file>, --path <file>      Path to file
 ```
 
-Individual flags`: Type.Flag` can also be printed with their `format()` method via `{f}` print format. The left-padding and the padding between the flags and their descriptions can be changed with the `.fmt` variable in the `Type.Flag` struct.
+Individual flags`: Type.Flag` can be printed with their `format()` method via `{f}` print format.
 
 ```zig
 // e.g.
