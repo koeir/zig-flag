@@ -22,7 +22,7 @@ pub fn parse_flag(
         return root.Type.FlagError.DuplicateFlag;
 
     switch (flag.value) {
-        .Argumentative => {
+        .Input => {
             const next_arg = args.next() orelse {
                 return root.Type.FlagError.ArgNoArg;
             };

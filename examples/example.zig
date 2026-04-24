@@ -60,7 +60,7 @@ pub fn main(init: std.process.Init) !void {
     }
 
     try stdout.writeAll("\n");
-    const file: ?[:0]const u8 = flags.get_value("file").?.Argumentative;
+    const file: ?[:0]const u8 = flags.get_value("file").?.Input;
     if (file) |val| {
         try stdout.print("The path is {s}!\n", .{ val });
     } try stdout.writeAll("\n");
@@ -91,7 +91,7 @@ pub fn main(init: std.process.Init) !void {
 }
 
 const Switch = flagparse.Type.Switch;
-const Argumentative = flagparse.Type.Argumentative;
+const Input = flagparse.Type.Input;
 
 // Initialize flags and their default values
 // name doesn't really matter as long as the
@@ -131,7 +131,7 @@ const initflags: flagparse.Type.Flags = .{
             .tag = "Input",
             .long = "path",
             .short = 'p',
-            .value = Argumentative,
+            .value = Input,
             .desc = "Path to file",
         },
     }

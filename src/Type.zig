@@ -54,10 +54,10 @@ pub const FlagFmt = enum {
 
 // Type aliases
 pub const Switch: FlagVal = .{ .Switch = false };
-pub const Argumentative: FlagVal = .{ .Argumentative = null };
+pub const Input: FlagVal = .{ .Input = null };
 
 pub const FlagType = enum {
-    Switch, Argumentative
+    Switch, Input
 };
 
 pub const ParseResult = struct {
@@ -82,7 +82,7 @@ pub const ParseResult = struct {
 
 pub const FlagVal = union(FlagType) {
     Switch: bool,                 // On/off
-    Argumentative: ?[:0]const u8, // Takes an argument
+    Input: ?[:0]const u8, // Takes an argument
 
     pub fn format(
         self: @This(),
@@ -90,7 +90,7 @@ pub const FlagVal = union(FlagType) {
     ) std.Io.Writer.Error!void {
         switch (self) {
             .Switch => |val| try writer.print("{}", .{ val }),
-            .Argumentative => |val| try writer.print("{s}", .{ val.? }),
+            .Input => |val| try writer.print("{s}", .{ val.? }),
         }
     }
 };
@@ -289,8 +289,8 @@ pub const Flag = struct {
     }
 
     pub fn set_arg(self: *Flag, arg: [:0]const u8) !void {
-        if (self.value == .Argumentative ) {
-            self.value.Argumentative = arg;
+        if (self.value == .Input ) {
+            self.value.Input = arg;
         } else return FlagError.FlagNotArg;
     }
 
@@ -305,9 +305,9 @@ pub const Flag = struct {
                     else    => unreachable,
                 }
             },
-            .Argumentative => |val| {
+            .Input => |val| {
                 switch (self.default.value) {
-                    .Argumentative => |default| {
+                    .Input => |default| {
                         if (val) |v| {
                             if (default) |d| {
                                 return std.mem.eql(u8, v, d);
@@ -356,7 +356,7 @@ pub const Flag = struct {
             try writer.print("-{c}", .{ short });
             minus += "-.".len;
 
-            if (self.value == .Argumentative) {
+            if (self.value == .Input) {
                 try writer.print(" <{s}>", .{ self.name });
                 minus += self.name.len + " <>".len;
             }
@@ -372,7 +372,7 @@ pub const Flag = struct {
 
         if (self.long) |long| {
             try writer.print("--{s}", .{ long });
-            if (self.value == .Argumentative ) {
+            if (self.value == .Input ) {
                     try writer.print(" <{s}>", .{ self.name });
                     minus += self.name.len + " <>".len;
             }
