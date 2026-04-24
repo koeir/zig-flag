@@ -153,7 +153,7 @@ pub fn main() !void {
     const flagless_args = result.argv;
 
     const recursive: bool = flags.get_value("recursive").?.Switch;
-    const file: ?[:0]const u8 = flags.get_value("file").?.Argumentative;
+    const file: ?[:0]const u8 = flags.get_value("file").?.Input;
 
     if (recursive) // do stuff
 
