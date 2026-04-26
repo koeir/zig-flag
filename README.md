@@ -1,6 +1,6 @@
 # flagparse
 
-A simple flag parser for Zig programs.
+A simple flag parser for Zig programs. API documentation can be found at my [github pages site](https://koeir.github.io).
 
 ## Features
 
