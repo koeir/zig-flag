@@ -3,15 +3,15 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const flagparse = b.addModule("flagparse", .{
+    const zigflag = b.addModule("zigflag", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
     });
 
     const lib = b.addLibrary(.{
-        .name = "flagparse",
-        .root_module = flagparse,
+        .name = "zigflag",
+        .root_module = zigflag,
         .linkage = .static,
     });
 

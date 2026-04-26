@@ -1,4 +1,4 @@
-# flagparse
+# zig-flag
 
 A simple flag parser for Zig programs. API documentation can be found [here](https://koeir.github.io).
 
@@ -29,15 +29,15 @@ See [examples/formatting.md](examples/formatting.md)
 
 ```zsh
 // Specific tag
-zig fetch --save https://github.com/koeir/flagparse/archive/refs/tags/v0.x.x.tar.gz
+zig fetch --save https://github.com/koeir/zigflag/archive/refs/tags/v0.x.x.tar.gz
 
 // Or master branch
-zig fetch --save git+https://github.com/koeir/flagparse
+zig fetch --save git+https://github.com/koeir/zigflag
 ```
 
 ```zig
     // build.zig
-    const flagparse = b.dependency("flagparse", .{
+    const zigflag = b.dependency("zigflag", .{
         .target = target,
         .optimize = optimize,
     });
@@ -51,23 +51,23 @@ zig fetch --save git+https://github.com/koeir/flagparse
         })
     });
 
-    exe.root_module.addImport("flagparse", flagparse.module("flagparse"));
+    exe.root_module.addImport("zigflag", zigflag.module("zigflag"));
     b.installArtifact(exe);
 ```
 
-2. [Initialize flags](https://github.com/koeir/flagparse/blob/master/examples/flags_init.md)
+2. [Initialize flags](https://github.com/koeir/zigflag/blob/master/examples/flags_init.md)
 ```zig
-const flagparse = @import("flagparse");
+const zigflag = @import("zigflag");
 
-const SwitchFlag = flagparse.Type.SwitchFlag;
-const InputFlag = flagparse.Type.InputFlag;
+const SwitchFlag = zigflag.Type.SwitchFlag;
+const InputFlag = zigflag.Type.InputFlag;
 
-const Flags = flagparse.Type.Flags;
-const Flag = flagparse.Type.Flag;
+const Flags = zigflag.Type.Flags;
+const Flag = zigflag.Type.Flag;
 
 // Initialize flags and their default values
 // name doesn't really matter as long as the
-// members are all of type flagparse
+// members are all of type zigflag
 pub const defaults: Flags = .{
     .list = &[_]Flag
     {
@@ -110,24 +110,24 @@ pub const defaults: Flags = .{
 };
 ```
 
-3. [Parse flags](https://github.com/koeir/flagparse/blob/master/examples/parsing.md)
+3. [Parse flags](https://github.com/koeir/zigflag/blob/master/examples/parsing.md)
 ```zig
 const default_flags = @import("./flags_init.zig").defaults;
 
 const arena = init.arena.allocator();
 var errptr = ?[]const u8 = null;
 
-const results = flagparse.parse(arena, min.args, defaults_flags, &errptr, .{ ... }, )
+const results = zigflag.parse(arena, min.args, defaults_flags, &errptr, .{ ... }, )
 catch |err| {
     // handle errors
 }; // results.deinit(allocator); if gpa, though results has to be var
 
 // Retrieving values
-const flags: flagparse.Type.Flags = results.flags;
+const flags: zigflag.Type.Flags = results.flags;
 const argv: ?std.ArrayList([:0]const u8) = results.argv;
 ```
 
-4. [Use](https://github.com/koeir/flagparse/blob/master/examples/retrieving_values.md)
+4. [Use](https://github.com/koeir/zigflag/blob/master/examples/retrieving_values.md)
 ```zig
 // Existance of flags are checked in comptime
 _ = flags.compGet("recursive", default_flags); // returns a pointer to the flag
@@ -154,7 +154,7 @@ const recursive = flags.getWithFlag(&[_]u8 { 'r' }) orelse return;
     // center padding is calculated by
     // value - n of chars in "-<s>, --<long>"
     // so make sure the padding is enough
-    flagparse.Type.Flag.fmt = .{
+    zigflag.Type.Flag.fmt = .{
         .padding = .{
             .left = 5,
             .center = 30,

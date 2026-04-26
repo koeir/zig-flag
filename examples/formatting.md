@@ -10,7 +10,7 @@ for (flags.list) |f| {
 }
 
 // Can be customized with the `Flag.fmt` declaration.
-flagparse.Type.Flag.fmt = .{
+zigflag.Type.Flag.fmt = .{
     .columns = .one,
     .padding = .{
         .left = 5,

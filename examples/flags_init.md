@@ -1,15 +1,14 @@
 ```zig
-const flagparse = @import("flagparse");
+const zigflag = @import("zigflag");
 
-const SwitchFlag = flagparse.Type.SwitchFlag;
-const InputFlag = flagparse.Type.InputFlag;
+const SwitchFlag = zigflag.Type.SwitchFlag;
+const InputFlag = zigflag.Type.InputFlag;
 
-const Flags = flagparse.Type.Flags;
-const Flag = flagparse.Type.Flag;
+const Flags = zigflag.Type.Flags;
+const Flag = zigflag.Type.Flag;
 
 // Initialize flags and their default values
-// name doesn't really matter as long as the
-// members are all of type flagparse
+// name doesn't really matter
 pub const defaults: Flags = .{
     .list = &[_]Flag
     {
