@@ -49,3 +49,43 @@ Usage:
     Path to file
 
 ```
+
+## Structs
+```zig
+pub const Flag = struct {
+...
+    // center padding is calculated by
+    // value - n of chars in "-<s>, --<long>"
+    pub const Format = struct {
+        fillerStyle: u8 = ' ',
+        greyOutFiller: bool = false,
+        greyOutDesc: bool = false,
+        columns: enum {
+            one, two
+        } = .two,
+        padding: struct {
+            left: usize = 1,
+            desc_left: usize = 1, // useless for columns.two; applied on top of .left
+            center: usize = 30, //useless for columns.one
+        } = .{},
+    };
+
+    // Customize this instance
+    pub var fmt = Format{};
+...
+}
+```
+```zig
+pub const Flags = struct {
+...
+    pub const UsageConfig = struct {
+        padding_left: usize = 0,
+        printUntagged: bool = false,
+        untaggedFirst: bool = true,
+        tagStyle: enum {
+            brackets, colon, underline
+        } = .colon
+    };
+...
+}
+```
