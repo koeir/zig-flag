@@ -114,9 +114,7 @@ const gpa = init.gpa;
 var errptr = ?[]const u8 = null;
 
 const results = flagparse.parse(
-    gpa, min.args, defaults_flags, &errptr,
-    // Config options
-    .{ .allowDups = false, .verbose = true, .writer = stderr, .prefix = "my-program: ", .errOnNoArgs = true, }, ) 
+    gpa, min.args, defaults_flags, &errptr, .{ ... }, )
 catch |err| {
     if (err != flagparse.Type.FlagError.ArgNoArg) return;
 
@@ -131,26 +129,26 @@ catch |err| {
 }; results.deinit(allocator);
 
 // Retrieving values
-_ = results.flags;
-_ = results.argv;
+const flags = results.flags;
+const argv = results.argv;
 ```
 
 4. [Use](https://github.com/koeir/flagparse/blob/master/examples/retrieving_values.md)
 ```zig
 // Existance of flags are checked in comptime
-_ = flags.compGet("recursive", initflags);
-_ = flags.compGetValue(Switch, "recursive", initflags);
+_ = flags.compGet("recursive", default_flags);
+_ = flags.compGetValue(Switch, "recursive", default_flags);
 
 // Will cause compilation errors
-// _ = flags.compGetValue(Input, "recursive", initflags);
-// _ = flags.compGet("hey i dont exist", initflags);
+// _ = flags.compGetValue(Input, "recursive", default_flags);
+// _ = flags.compGet("hey i dont exist", default_flags);
 
 // non-comptime variants
 const file: Input = try flags.getValue(Input, "file"); // Input = ?[:0]const u8;
 if (file) |val| // do stuff
 
-const force = initflags.getWithFlag("force") orelse return;
-const recursive = initflags.getWithFlag(&[_]u8 { 'r' }) orelse return;
+const force = default_flags.getWithFlag("force") orelse return;
+const recursive = default_flags.getWithFlag(&[_]u8 { 'r' }) orelse return;
 
 // also .get(...), .tryGet(...) and that returns a pointer to the flag itself
 ```
