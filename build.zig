@@ -16,29 +16,4 @@ pub fn build(b: *std.Build) void {
     });
 
     b.installArtifact(lib);
-
-    const want_example = b.option(bool, "example", "Build example") orelse false;
-
-    if (want_example) {
-
-    const exe = b.addExecutable(.{
-        .name = "example",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("examples/example.zig"),
-            .target = target,
-            .optimize = optimize,
-        })
-    });
-
-        exe.root_module.addImport("flagparse", flagparse);
-        b.installArtifact(exe);
-
-        const run_step = b.step("run", "run");
-        const run_cmd = b.addRunArtifact(exe);
-        run_step.dependOn(&run_cmd.step);
-        run_cmd.step.dependOn(b.getInstallStep());
-        if (b.args) |args| {
-            run_cmd.addArgs(args);
-        }
-    }
 }
