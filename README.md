@@ -4,14 +4,14 @@ A simple flag parser for Zig programs.
 
 ## Features
 
-- [Customizable formatted printing](https://github.com/koeir/flagparse/blob/master/README.md#printing-format)
-- [Simple interface](https://github.com/koeir/flagparse/edit/master/README.md#usage)
-- [Returns argv list without flags](https://github.com/koeir/flagparse/edit/master/README.md#usage)
+- [Customizable formatted printing](README.md#printing-format)
+- [Simple interface](README.md#usage)
+- [Returns argv list without flags](README.md#usage)
 
 ## Config Options
 
 ### Parse Config
-
+See [Type.ParseConfig](src/Type.zig)
 - **allowDups**: Don't error when duplicate flags are set. _Default is false_.
 - **verbose**: Print out error messages when errors occur. _Default is false_.
 - **writer**: Required when using verbose option. Doesn't really do anything without it. _Default is null_.
@@ -20,13 +20,8 @@ A simple flag parser for Zig programs.
 - **errOnNoArgs**: Outputs an error if there are no arguments except argv[0]. _Default is false_.
 - **exitFirstErr**: Exit on first error found. _Default is true_.
 
-### Usage Config
-
-Config for `Type.Flags.usage()` method
-
-- **padding_left**: Number of whitespaces before the tag. _Default is 0_
-- **printUntagged**: Print untagged flags. _Default is false_.
-- **untaggedFirst**: Print untagged flags first. Prints last when false. _Default is true_.
+### Print Formatting
+See [examples/formatting.md](examples/formatting.md)
 
 ## Usage
 
@@ -56,22 +51,28 @@ zig fetch --save https://github.com/koeir/flagparse/archive/refs/tags/v0.x.x.tar
     b.installArtifact(exe);
 ```
 
-2. Declare a list of flags with the built-in structs
-
+2. [Initialize flags](https://github.com/koeir/flagparse/blob/master/examples/flags_init.md)
 ```zig
+const flagparse = @import("flagparse");
 
-const Switch = flagparse.Type.Switch;                  // default is false
-const Input = flagparse.Type.Input;    // default is null
+const SwitchFlag = flagparse.Type.SwitchFlag;
+const InputFlag = flagparse.Type.InputFlag;
 
-const initflags: flagparse.Type.Flags = .{
-    .list = &[_] flagparse.Type.Flag
+const Flags = flagparse.Type.Flags;
+const Flag = flagparse.Type.Flag;
+
+// Initialize flags and their default values
+// name doesn't really matter as long as the
+// members are all of type flagparse
+pub const defaults: Flags = .{
+    .list = &[_]Flag
     {
         .{
             .name = "recursive",
             .tag = "Switches",
             .long = "recursive",
             .short = 'r',
-            .value = Switch,        // a different default value can be set with .{ Switch/Argumentative = <value> }
+            .value = SwitchFlag,
             .desc = "Recurse into directories",
         },
         .{
@@ -79,15 +80,15 @@ const initflags: flagparse.Type.Flags = .{
             .tag = "Switches",
             .long = "force",
             .short = 'f',
-            .vanity = "-[n|f], --[no-]force",    // overwrites long and short flags in printing
-            .value = Switch,
+            .vanity = "-[n|f], --[no-]force",
+            .value = SwitchFlag,
             .desc = "Skip confirmation prompts",
         },
         .{  // by default, untagged flags will not be printed
             .name = "no-force",
             .long = "no-force",
             .short = 'n',
-            .value = Switch,
+            .value = SwitchFlag,
             .desc = "Do not skip confirmation prompts",
         },
         // Arguments will accept the next argv
@@ -98,190 +99,89 @@ const initflags: flagparse.Type.Flags = .{
             .tag = "Input",
             .long = "path",
             .short = 'p',
-            .value = Input,
+            .value = InputFlag,
             .desc = "Path to file",
         },
     }
 };
 ```
 
-3. Initialize args, allocators, and error pointer for handling
-
+3. [Parse flags](https://github.com/koeir/flagparse/blob/master/examples/parsing.md)
 ```zig
-const std = @import("std");
-const flagparse = @import("flagparse");
+const default_flags = @import("./flags_init.zig").defaults;
 
-pub fn main(init: std.process.Init) !void {
-    const io = init.io;
-    const min = init.minimal;
+const gpa = init.gpa;
+var errptr = ?[]const u8 = null;
 
-    var gpa = std.heap.DebugAllocator(.{}){};
-    var arena: std.heap.ArenaAllocator = .init(gpa.allocator());
-    defer arena.deinit();
+const results = flagparse.parse(
+    gpa, min.args, defaults_flags, &errptr,
+    // Config options
+    .{ .allowDups = false, .verbose = true, .writer = stderr, .prefix = "my-program: ", .errOnNoArgs = true, }, ) 
+catch |err| {
+    if (err != flagparse.Type.FlagError.ArgNoArg) return;
 
-    // points to last flag on error
-    var errptr: ?[]const u8 = null;
-    ...
+    const arg: []const u8 = errptr orelse return;
+    const flagtmp = defaults_flags.getWithFlag(arg) orelse return;
 
+    // "Usage" output when parse fails
+    try stderr.writeAll("\nUsage:\n");
+    try stderr.print("{f}\n", .{ flagtmp.* });
+
+    return;
+}; results.deinit(allocator);
+
+// Retrieving values
+_ = results.flags;
+_ = results.argv;
 ```
 
-4. Parse
-
+4. [Use](https://github.com/koeir/flagparse/blob/master/examples/retrieving_values.md)
 ```zig
-const std = @import("std");
-const flagparse = @import("flagparse");
+// Existance of flags are checked in comptime
+_ = flags.compGet("recursive", initflags);
+_ = flags.compGetValue(Switch, "recursive", initflags);
 
-pub fn main() !void {
-    ...
-    // returns a tuple of Flags and resulting args
-    // resulting args is a maybe value
-    const result = flagparse.parse(arena.allocator(), min.args, initflags, &errptr, .{}) catch |err| {
-        const arg_error = errptr.?;
-        // handle err
-        return;
-    };
-    ...
+// Will cause compilation errors
+// _ = flags.compGetValue(Input, "recursive", initflags);
+// _ = flags.compGet("hey i dont exist", initflags);
 
+// non-comptime variants
+const file: Input = try flags.getValue(Input, "file"); // Input = ?[:0]const u8;
+if (file) |val| // do stuff
+
+const force = initflags.getWithFlag("force") orelse return;
+const recursive = initflags.getWithFlag(&[_]u8 { 'r' }) orelse return;
+
+// also .get(...), .tryGet(...) and that returns a pointer to the flag itself
 ```
 
-5. Use
-
+5. [Optionally customize](examples/formatting.md)
 ```zig
-    ...
-    // retrieve tuple values
-    const flags = result.flags;
-    const flagless_args = result.argv;
-
-    const recursive: bool = flags.get_value("recursive").?.Switch;
-    const file: ?[:0]const u8 = flags.get_value("file").?.Input;
-
-    if (recursive) // do stuff
-
-    if (flagless_args) |args| {
-        // do stuff
-    }
-    ...
-```
-
-Other ways to retrieve flags:
-
-```zig
-    // returns null if not found
-    pub fn get(self: *const Self, name: []const u8) ?*const Flag {
-        return for (self.list) |flag| {
-            if (std.mem.eql(u8, flag.name, name)) break &flag;
-        } else null;
-    }
-
-    // errs if not found
-    pub fn try_get(self: *const Self, name: []const u8) FlagError!*const Flag {
-        return for (self.list) |flag| {
-            if (std.mem.eql(u8, flag.name, name)) break &flag;
-        } else FlagError.NoSuchFlag;
-    }
-
-    pub fn get_with_flag(self: *const Self, flag: []const u8) ?*const Flag {
-        return for (self.list) |*ret| {
-            if (ret.short) |short| {
-                if (flag[0] == short) break ret;
-            }
-
-            if (ret.long) |long| {
-                if (std.mem.eql(u8, flag, long)) break ret;
-            }
-        } else null;
-    }
-
-    pub fn get_value(self: *const Self, name: []const u8) ?FlagVal {
-        const flag = self.get(name) orelse return null;
-        return flag.value;
-    }
-```
-
-## Printing Format
-```zig
-    // Type.Flag
-    pub const Format = struct {
-        fillerStyle: u8 = ' ',
-        greyOutFiller: bool = false,
-        greyOutDesc: bool = false,
-        columns: enum {
-            one, two
-        } = .two,
-        padding: struct {
-            left: usize = 1,
-            desc_left: usize = 1, // useless for columns.two; applied on top of .left
-            center: usize = 30, //useless for columns.one
-        } = .{},
-    };
-
-    // Type.Flags
-    pub const UsageConfig = struct {
-        padding_left: usize = 0,
-        printUntagged: bool = false,
-        untaggedFirst: bool = true,
-        tagStyle: enum {
-            brackets, colon, underline
-        } = .colon
-    };
-
-```
-The `Flags` struct has a method `usage()` that prints all flags with their respective tags. Tags are printed in the order that they first appear in the default flags.
-
-```zsh
-  Switches:
-     -r, --recursive               Recurse into directories
-     -[n|f], --[no-]force          Don\'t/skip confirmation prompts
-
-  Input:
-     -p <file>, --path <file>      Path to file
-```
-
-Individual flags`: Type.Flag` can be printed with their `format()` method via `{f}` print format.
-
-```zig
-// e.g.
-// This affects the printing of `Type.Flags.usage()` too
-flagparse.Type.Flag.fmt = {
-    .style = '.',       // change what is printed between the flags and descriptions; default is whitespace (' ')
-    .columns= .two,     // flags and descriptions as one/two columns; default is .two
-    .left = 1,
-    .center = 20,
-}
-```
-
-```zsh
- -r, --recursive.... Recurse into directories
-```
-
-More examples:
-
-```zig
-    // Different style
+    // warning:
+    //
+    // center padding is calculated by
+    // value - n of chars in "-<s>, --<long>"
+    // so make sure the padding is enough
     flagparse.Type.Flag.fmt = .{
-        .columns = .one,
         .padding = .{
             .left = 5,
+            .center = 30,
         },
-        .style = ' ',  // default
+        .greyOutFiller = true,
+        .fillerStyle = '.',
     };
-    try stdout.writeAll("\nUsage:\n\n");
-    try initflags.usage(stdout, .{ .padding_left = 2, .tagStyle = .brackets });
+
 ```
 
 ```zsh
 Usage:
 
-  [Switches]
-     -r, --recursive
-     Recurse into directories
+  Switches:
+     -r, --recursive.............. Recurse into directories
+     -[n|f], --[no-]force......... Skip confirmation prompts
 
-         --[no-]force
-     Don\'t/skip confirmation prompts
-
-  [Input]
-     -p <file>, --path <file>
-     Path to file
+  Input:
+     -p <file>, --path <file>..... Path to file
 ```
 
 ## Errors
