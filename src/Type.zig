@@ -3,42 +3,6 @@ const root = @import("root.zig");
 
 const eql = std.mem.eql;
 
-// Init struct for simpler syntax
-pub const OutArgs = struct {
-    args: ?[][:0]const u8 = null,
-    index: usize = 0,
-
-    pub fn addArg(
-        self: *@This(),
-        a: std.mem.Allocator,
-        arg: [:0]const u8,
-        og_arglist: std.process.Args,
-    ) !void {
-        // Allocate memory if it doesn't exist yet
-        if (self.args == null) {
-            self.args = try a.alloc([:0]const u8, og_arglist.vector.len);
-        }
-
-        self.args.?[self.index] = arg;
-        self.index += 1;
-    }
-
-    pub fn resize(
-        self: *@This(),
-        a: std.mem.Allocator
-    ) !void {
-        if (self.args) |*value| {
-            value.* = try a.realloc(value.*, self.count());
-        }
-    }
-
-    pub fn count(self: *@This()) usize {
-        if (self.args == null) return 0;
-
-        return self.index;
-    }
-};
-
 pub const FlagError = error {
     NoArgs,
     NoSuchFlag,
@@ -67,7 +31,7 @@ pub const FlagType = enum {
 
 pub const ParseResult = struct {
     flags: Flags,
-    argv: ?[][:0]const u8,
+    argv: ?std.ArrayList([:0]const u8),
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -81,7 +45,7 @@ pub const ParseResult = struct {
 
     pub fn deinit(self: *const @This(), allocator: std.mem.Allocator) void {
         self.flags.deinit(allocator);
-        allocator.free(self.argv orelse return);
+        if (self.argv) |args| args.deinit(allocator);
     }
 };
 

@@ -28,9 +28,8 @@ pub fn parse(
         out_flags[i].default = value;
     }
 
-    // Use buffer
-    var out_args = Type.OutArgs{};
-    errdefer if (out_args.args) |value| allocator.free(value);
+    var out_args: ?std.ArrayList([:0]const u8) = null;
+    errdefer if (out_args) |*a| a.deinit(allocator);
 
     var isErred = false;
     var out_error: Type.FlagError = undefined;
@@ -43,7 +42,10 @@ pub fn parse(
             // it takes the next arg, which wouldn't go into this
             // slice
 
-            try out_args.addArg(allocator, arg, args);
+            if (out_args) |*oargs| { try oargs.append(allocator, arg); } 
+            else { out_args = try 
+                .initCapacity(allocator, args.vector.len); }
+
             continue;
         };
 
@@ -100,14 +102,18 @@ pub fn parse(
         return error.NoArgs;
     }
 
-    // shrink out_args because it's guaranteed to be <= args
-    try out_args.resize(allocator);
+    blk: { 
+    // shrink out_args it because it's guaranteed to be <= args
+        if (out_args) |*oargs| {
+            if (oargs.items.len == args.vector.len) break :blk;
+            try oargs.resize(allocator, oargs.items.len);
+    }}
 
     const ret: Type.Flags = .{
         .list = out_flags,
     };
 
-    return .{ .flags = ret, .argv = out_args.args };
+    return .{ .flags = ret, .argv = out_args };
 }
 
 // Returns whether if a flag is in long or short form
