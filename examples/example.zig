@@ -25,7 +25,7 @@ pub fn main(init: std.process.Init) !void {
         if (err != flagparse.Type.FlagError.ArgNoArg) return;
 
         const arg: []const u8 = errptr orelse return;
-        const flagtmp = initflags.get_with_flag(arg) orelse return;
+        const flagtmp = initflags.getWithFlag(arg) orelse return;
 
         // "Usage" output when parse fails
         try stdout.writeAll("\nUsage:\n");
@@ -60,7 +60,7 @@ pub fn main(init: std.process.Init) !void {
     }
 
     try stdout.writeAll("\n");
-    const file: ?[:0]const u8 = flags.get_value("file").?.Input;
+    const file: ?[:0]const u8 = flags.getValue("file").?.Input;
     if (file) |val| {
         try stdout.print("The path is {s}!\n", .{ val });
     } try stdout.writeAll("\n");
@@ -71,7 +71,6 @@ pub fn main(init: std.process.Init) !void {
             try stdout.print("{s}\n", .{ value });
         }
     }
-
 
     // Also works with the Flags struct
     try stdout.writeAll("\nUsage:\n");

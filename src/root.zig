@@ -43,7 +43,7 @@ pub fn parse(
             // it takes the next arg, which wouldn't go into this
             // slice
 
-            try out_args.add_arg(allocator, arg, args);
+            try out_args.addArg(allocator, arg, args);
             continue;
         };
 

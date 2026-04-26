@@ -32,7 +32,7 @@ pub fn parse_flag(
                 return root.Type.FlagError.ArgNoArg;
             }
 
-            try flag.set_arg(next_arg);
+            try flag.setArg(next_arg);
         },
 
         .Switch => {

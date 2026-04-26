@@ -6,7 +6,7 @@ pub const OutArgs = struct {
     args: ?[][:0]const u8 = null,
     index: usize = 0,
 
-    pub fn add_arg(
+    pub fn addArg(
         self: *@This(),
         a: std.mem.Allocator,
         arg: [:0]const u8,
@@ -75,7 +75,7 @@ pub const ParseResult = struct {
     }
 
     pub fn deinit(self: *const @This(), allocator: std.mem.Allocator) void {
-        allocator.free(self.flags.list);
+        self.flags.deinit(allocator);
         allocator.free(self.argv orelse return);
     }
 };
@@ -145,13 +145,13 @@ pub const Flags = struct {
     }
 
     // errs if not found
-    pub fn try_get(self: *const Self, name: []const u8) FlagError!*const Flag {
+    pub fn tryGet(self: *const Self, name: []const u8) FlagError!*const Flag {
         return for (self.list) |flag| {
             if (std.mem.eql(u8, flag.name, name)) break &flag;
         } else FlagError.NoSuchFlag;
     }
 
-    pub fn get_with_flag(self: *const Self, flag: []const u8) ?*const Flag {
+    pub fn getWithFlag(self: *const Self, flag: []const u8) ?*const Flag {
         return for (self.list) |*ret| {
             if (ret.short) |short| {
                 if (flag[0] == short) break ret;
@@ -163,7 +163,7 @@ pub const Flags = struct {
         } else null;
     }
 
-    pub fn get_value(self: *const Self, name: []const u8) ?FlagVal {
+    pub fn getValue(self: *const Self, name: []const u8) ?FlagVal {
         const flag = self.get(name) orelse return null;
         return flag.value;
     }
@@ -288,7 +288,7 @@ pub const Flag = struct {
         } else return FlagError.FlagNotSwitch;
     }
 
-    pub fn set_arg(self: *Flag, arg: [:0]const u8) !void {
+    pub fn setArg(self: *Flag, arg: [:0]const u8) !void {
         if (self.value == .Input ) {
             self.value.Input = arg;
         } else return FlagError.FlagNotArg;
