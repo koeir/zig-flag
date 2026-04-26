@@ -110,11 +110,11 @@ pub const defaults: Flags = .{
 ```zig
 const default_flags = @import("./flags_init.zig").defaults;
 
-const gpa = init.gpa;
+const arena = init.arena.allocator();
 var errptr = ?[]const u8 = null;
 
 const results = flagparse.parse(
-    gpa, min.args, defaults_flags, &errptr, .{ ... }, )
+    arena, min.args, defaults_flags, &errptr, .{ ... }, )
 catch |err| {
     if (err != flagparse.Type.FlagError.ArgNoArg) return;
 
@@ -126,7 +126,7 @@ catch |err| {
     try stderr.print("{f}\n", .{ flagtmp.* });
 
     return;
-}; results.deinit(allocator);
+}; // results.deinit(allocator); if gpa, though results has to be var
 
 // Retrieving values
 const flags = results.flags;
