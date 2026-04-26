@@ -149,10 +149,9 @@ pub const Flags = struct {
     ) *const Flag {
         comptime { 
             for (defaults.list) |*flag| {
-                if (std.mem.eql(u8, name, flag.name)) {
+                if (std.mem.eql(u8, name, flag.name))
                     return flag;
-                } @compileError(name ++ ": Flag not found.");
-            }
+            } @compileError(name ++ ": Flag not found.");
         }
     }
 
