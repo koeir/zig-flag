@@ -170,12 +170,14 @@ pub fn constructFlags(comptime defaults: Type.Flags) type {
 pub fn populateStruct(comptime flagStruct: anytype, flags: Type.Flags) !flagStruct {
     var ret: flagStruct = undefined;
     inline for (std.meta.fields(flagStruct)) |f| {
-        if (f.type == bool) {
-            @field(ret, f.name) = try flags.getValue(Type.Switch, f.name);
-        } else if (f.type == ?[][:0]const u8) {
-            const val = try flags.getValue(Type.Input, f.name);
-            @field(ret, f.name) = if (val) |v| v.items else null;
-        }
+        @field(ret, f.name) = sw: switch (f.type) {
+            bool => try flags.getValue(Type.Switch, f.name),
+            ?[][:0]const u8 => {
+                const val = try flags.getValue(Type.Input, f.name);
+                break :sw if (val) |v| v.items else null;
+            },
+            inline else => @compileError("Invalid type during struct population.")
+        };
     }
 
     return ret;
