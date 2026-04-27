@@ -1,4 +1,5 @@
-const std = @import("std"); const helpers = @import("helpers.zig");
+const std = @import("std");
+const helpers = @import("helpers.zig");
 pub const Type = @import("Type.zig");
 
 // Memory returned must be freed
@@ -115,7 +116,10 @@ pub fn parse(
         .list = out_flags,
     };
 
-    return .{ .flags = ret, .flags_array = out_flags, .argv = out_args };
+    return .{
+        .flags = ret,
+        .flags_array = out_flags,
+        .argv = if (out_args) |*oargs| oargs else null };
 }
 
 // Returns whether if a flag is in long or short form
@@ -141,7 +145,7 @@ pub fn error_message(err: anyerror) ?[]const u8 {
     };
 }
 
-pub fn construct(comptime defaults: Type.Flags) type {
+pub fn constructFlags(comptime defaults: Type.Flags) type {
     comptime var field_names: [defaults.list.len][]const u8 = undefined;
     comptime var field_types: [defaults.list.len]type = undefined;
     comptime var field_attrs: [defaults.list.len]std.builtin.Type.StructField.Attributes = undefined;
@@ -163,12 +167,12 @@ pub fn construct(comptime defaults: Type.Flags) type {
         .auto, null, &field_names, &field_types, &field_attrs);
 }
 
-pub fn populate(comptime flagStruct: anytype, flags: Type.Flags) !flagStruct {
+pub fn populateStruct(comptime flagStruct: anytype, flags: Type.Flags) !flagStruct {
     var ret: flagStruct = undefined;
     inline for (std.meta.fields(flagStruct)) |f| {
-        if (comptime f.type == bool) {
+        if (f.type == bool) {
             @field(ret, f.name) = try flags.getValue(Type.Switch, f.name);
-        } else if (comptime f.type == ?[][:0]const u8) {
+        } else if (f.type == ?[][:0]const u8) {
             const val = try flags.getValue(Type.Input, f.name);
             @field(ret, f.name) = if (val) |v| v.items else null;
         }
