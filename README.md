@@ -1,6 +1,8 @@
 # zig-flag
 
-A simple flag parser for Zig programs. API documentation can be found [here](https://koeir.github.io).
+A simple flag parser for Zig programs. 
+<br><br>
+API documentation can be found [here](https://koeir.github.io) or made with [zig build docs](https://zig.guide/build-system/generating-documentation). If fetching from master, it is recommended do use `zig build docs` as the GitHub pages might not be updated.
 
 ## Features
 
