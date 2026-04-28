@@ -1,6 +1,8 @@
 const std = @import("std");
 const zigflag = @import("src/root.zig");
+
 const defaults = @import("./flags_init.zig").defaults;
+const Flags = zigflag.StructFlags(defaults);
 
 pub fn main(init: std.process.Init) !void {
 
@@ -26,6 +28,7 @@ pub fn main(init: std.process.Init) !void {
     defer result.deinit();
 
     const flags = result.flags;
+    const argv = result.argv;
 
     zigflag.Type.Flag.fmt = .{
         .columns = .one,
@@ -66,7 +69,7 @@ pub fn main(init: std.process.Init) !void {
     }
 
     std.debug.print("\n", .{});
-    if (result.argv) |args| {
+    if (argv) |args| {
         std.debug.print("flagless args:\n", .{});
         for (args) |arg| {
             std.debug.print("{s} ", .{arg});

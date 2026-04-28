@@ -1,6 +1,9 @@
 ```zig
-    const default_flags = @import("./flags_init.zig").defaults;
+    const defaults = @import("./init_flags.zig").defaults;
+    const Flags = zigflag.StructFlags(defaults);
 
+pub fn main(init: std.process.Init) !void {
+    ...
     // Make config
     const parsecfg: zigflag.Type.ParseConfig = .{
         .allowDashInput = true,
@@ -17,6 +20,8 @@
     defer result.deinit();
 
     // retrieving values
-    _ = result.flags;
-    _ = result.argv;
+    const flags: Flags = result.flags;
+    const argv: ?[][:0]const u8 = result.argv;
+    ...
+}
 ```

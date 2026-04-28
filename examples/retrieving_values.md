@@ -1,4 +1,9 @@
 ```zig
+    const defaults = @import("./init_flags.zig").defaults;
+    const Flags = zigflag.StructFlags(defaults);
+
+pub fn main(init: std.process.Init) !void {
+    ...
     const flags = result.flags;
     std.debug.print("recursive: {}\n", .{flags.recursive});
     std.debug.print("force: {}\n", .{flags.force});
@@ -16,4 +21,6 @@
             std.debug.print("{s} ", .{arg});
         } std.debug.print("\n", .{});
     }
+    ...
+}
 ```
