@@ -63,21 +63,21 @@ pub const Flags = struct {
     list: []const Flag,
 
     /// Returns null if not found
-    pub fn get(self: *const Self, name: []const u8) ?*const Flag {
+    pub fn get(self: *const Self, name: []const u8) ?Flag {
         return for (self.list) |flag| {
-            if (std.mem.eql(u8, flag.name, name)) break &flag;
+            if (std.mem.eql(u8, flag.name, name)) break flag;
         } else null;
     }
 
     /// Errs if not found
-    pub fn tryGet(self: *const Self, name: []const u8) FlagError!*const Flag {
+    pub fn tryGet(self: *const Self, name: []const u8) FlagError!Flag {
         return for (self.list) |flag| {
-            if (std.mem.eql(u8, flag.name, name)) break &flag;
+            if (std.mem.eql(u8, flag.name, name)) break flag;
         } else FlagError.NoSuchFlag;
     }
 
-    pub fn getWithFlag(self: *const Self, flag: []const u8) ?*const Flag {
-        return for (self.list) |*ret| {
+    pub fn getWithFlag(self: *const Self, flag: []const u8) ?Flag {
+        return for (self.list) |ret| {
             if (ret.short) |short| {
                 if (flag[0] == short) break ret;
             }
@@ -99,35 +99,24 @@ pub const Flags = struct {
         }
     }
 
-    /// Checks if flag exists at comptime
+    /// Finds flags in the initialized struct
     pub fn compFind(
+        comptime defaults: Self,
         comptime name: []const u8,
-        comptime defaults: Flags
-    ) *const Flag {
+    ) Flag {
         comptime {
-            for (defaults.list) |*flag| {
+            for (defaults.list) |flag| {
                 if (std.mem.eql(u8, name, flag.name))
                     return flag;
             } @compileError(name ++ ": Flag not found.");
         }
     }
 
-    /// Checks at comptime if flag exists first, minimizng runtime errors
-    pub fn compGet(
-        self: *const Self,
-        comptime name: []const u8,
-        comptime defaults: Flags
-    ) *const Flag {
-        _ = comptime compFind(name, defaults);
-        return self.get(name).?;
-    }
-
-    /// Checks at comptime if flag exists first, minimizing runtime errors
+    /// Retrieves default values from initialized flags
     pub fn compGetValue(
-        self: *const Self,
+        comptime defaults: Self,
         comptime T: type,
         comptime name: []const u8,
-        comptime defaults: Flags
     ) T {
         comptime {
             const default = compFind(name, defaults);
@@ -138,7 +127,7 @@ pub const Flags = struct {
             if (@TypeOf(val) != T) @compileError("'" ++ name ++ "' Flag is not a type '" ++ @typeName(T) ++ "'");
         }
 
-        switch (self.get(name).?.value) {
+        switch (defaults.get(name).?.value) {
             inline else => |val| {
                 if (@TypeOf(val) != T) unreachable;
                 return val;
