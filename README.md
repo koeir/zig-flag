@@ -112,39 +112,47 @@ pub const defaults: Flags = .{
 
 3. [Parse flags](https://github.com/koeir/zigflag/blob/master/examples/parsing.md)
 ```zig
-const default_flags = @import("./flags_init.zig").defaults;
+    const default_flags = @import("./flags_init.zig").defaults;
 
-const arena = init.arena.allocator();
-var errptr = ?[]const u8 = null;
+    // Make config
+    const parsecfg: zigflag.Type.ParseConfig = .{
+        .allowDashInput = true,
+        .allowDups = true,
+        .verbose = true,
+        .writer = stderr,
+        .prefix = "my-program: "
+    };
+    
+    // points to erred flag
+    var errptr: ?[]const u8 = null;
+    // actual parse, returns a tuple of Flags and resulting args
+    const result = try zigflag.parse(init.gpa, min.args, defaults, &errptr, parsecfg);
+    defer result.deinit();
 
-const results = zigflag.parse(arena, min.args, defaults_flags, &errptr, .{ ... }, )
-catch |err| {
-    // handle errors
-}; // results.deinit(allocator); if gpa, though results has to be var
-
-// Retrieving values
-const flags: zigflag.Type.Flags = results.flags;
-const argv: ?std.ArrayList([:0]const u8) = results.argv;
+    // retrieving values
+    _ = result.flags;
+    _ = result.argv;
 ```
 
 4. [Use](https://github.com/koeir/zigflag/blob/master/examples/retrieving_values.md)
 ```zig
-// Existance of flags are checked in comptime
-_ = flags.compGet("recursive", default_flags); // returns a pointer to the flag
-_ = flags.compGetValue(Switch, "recursive", default_flags); // Switch = bool;
+    const flags = result.flags;
+    std.debug.print("recursive: {}\n", .{flags.recursive});
+    std.debug.print("force: {}\n", .{flags.force});
 
-// Will cause compilation errors
-// _ = flags.compGetValue(Input, "recursive", default_flags);
-// _ = flags.compGet("hey i dont exist", default_flags);
+    if (flags.files) |files| {
+        std.debug.print("files:\n", .{});
+        for (files) |file| {
+            std.debug.print("{s} ", .{file});
+        } std.debug.print("\n", .{});
+    }
 
-// non-comptime variants
-const file: Input = try flags.getValue(Input, "file"); // Input = ?[:0]const u8;
-if (file) |val| // do stuff
-
-const force = flags.getWithFlag("force") orelse return;
-const recursive = flags.getWithFlag(&[_]u8 { 'r' }) orelse return;
-
-// also .get(...), .tryGet(...) and that returns a pointer to the flag itself
+    if (result.argv) |args| {
+        std.debug.print("flagless args:\n", .{});
+        for (args) |arg| {
+            std.debug.print("{s} ", .{arg});
+        } std.debug.print("\n", .{});
+    }
 ```
 
 5. [Optionally customize](examples/formatting.md)

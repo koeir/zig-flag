@@ -1,18 +1,19 @@
 ```zig
-// Existance of flags are checked in comptime
-_ = flags.compGet("recursive", initflags);
-_ = flags.compGetValue(Switch, "recursive", initflags);
+    const flags = result.flags;
+    std.debug.print("recursive: {}\n", .{flags.recursive});
+    std.debug.print("force: {}\n", .{flags.force});
 
-// Will cause compilation errors
-// _ = flags.compGetValue(Input, "recursive", initflags);
-// _ = flags.compGet("hey i dont exist", initflags);
+    if (flags.files) |files| {
+        std.debug.print("files:\n", .{});
+        for (files) |file| {
+            std.debug.print("{s} ", .{file});
+        } std.debug.print("\n", .{});
+    }
 
-// non-comptime variants
-const file: Input = try flags.getValue(Input, "file"); // Input = ?[:0]const u8;
-if (file) |val| // do stuff
-
-const force = initflags.getWithFlag("force") orelse return;
-const recursive = initflags.getWithFlag(&[_]u8 { 'r' }) orelse return;
-
-// also .get(...), .tryGet(...) and that returns a pointer to the flag itself
+    if (result.argv) |args| {
+        std.debug.print("flagless args:\n", .{});
+        for (args) |arg| {
+            std.debug.print("{s} ", .{arg});
+        } std.debug.print("\n", .{});
+    }
 ```
