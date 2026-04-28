@@ -23,9 +23,9 @@ pub fn parse(
         out_flags[i].default = value;
     }
 
-    var out_args: ?*std.ArrayList([:0]const u8) = try allocator.create(std.ArrayList([:0]const u8));
-    out_args.?.* = try std.ArrayList([:0]const u8).initCapacity(allocator, args.vector.len);
-    errdefer if (out_args) |a| a.deinit(allocator);
+    var out_args: *std.ArrayList([:0]const u8) = try allocator.create(std.ArrayList([:0]const u8));
+    out_args.* = try std.ArrayList([:0]const u8).initCapacity(allocator, args.vector.len);
+    errdefer out_args.deinit(allocator);
 
     var isErred = false;
     var out_error: anyerror = undefined;
@@ -38,7 +38,7 @@ pub fn parse(
             // note that if the current flag is an argumentative,
             // it takes the next arg, which wouldn't go into this
             // slice
-            try out_args.?.append(allocator, arg);
+            try out_args.append(allocator, arg);
             continue;
         };
 
@@ -88,7 +88,7 @@ pub fn parse(
     }
 
     if (isErred) return out_error;
-    if (arg_count == 0 and cfg.errOnNoArgs) {
+    if (arg_count == 1 and cfg.errOnNoArgs) {
         if (!cfg.verbose) return error.NoArgs;
 
         if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
@@ -97,12 +97,9 @@ pub fn parse(
         return error.NoArgs;
     }
 
-    // shrink or null out_args it because it's guaranteed to be <= args
-    if (out_args.?.items.len == 0) {
-        out_args.?.deinit(allocator);
-        out_args = null;
-    } else if (out_args.?.items.len < args.vector.len) {
-        try out_args.?.resize(allocator, out_args.?.items.len);
+    // shrink out_args it because it's guaranteed to be <= args
+    if (out_args.items.len < args.vector.len) {
+        try out_args.resize(allocator, out_args.items.len);
     }
 
     return .init(allocator, out_args, out_flags);
@@ -135,17 +132,17 @@ pub fn ParseResult(
     return struct {
         const Self = @This();
 
-        argv: ?[][:0]const u8,
+        argv: [][:0]const u8,
         flags: StructFlags(defaults),
         allocator: std.mem.Allocator,
         inner: struct {
             flags: []Type.Flag,
-            argv: ?*std.ArrayList([:0]const u8),
+            argv: *std.ArrayList([:0]const u8),
         },
 
         pub fn init(
             allocator: std.mem.Allocator,
-            argv: ?*std.ArrayList([:0]const u8), 
+            argv: *std.ArrayList([:0]const u8), 
             flags_array: []Type.Flag
         ) !Self {
             var parsed: std.StringHashMap(Type.Flag) = .init(allocator);
@@ -160,7 +157,7 @@ pub fn ParseResult(
             return .{
                 .allocator = allocator,
                 .flags = struct_flags,
-                .argv = if (argv) |args| args.items else null,
+                .argv = argv.items,
                 .inner = .{
                     .argv = argv,
                     .flags = flags_array
@@ -175,11 +172,9 @@ pub fn ParseResult(
             }
 
             self.allocator.free(self.inner.flags);
-
-            if (self.inner.argv) |args| {
-                args.deinit(self.allocator);
-                self.allocator.destroy(args);
-            }
+            
+            self.inner.argv.deinit(self.allocator);
+            self.allocator.destroy(self.inner.argv);
         }
     };
 }

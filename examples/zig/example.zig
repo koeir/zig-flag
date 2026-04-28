@@ -69,10 +69,8 @@ pub fn main(init: std.process.Init) !void {
     }
 
     std.debug.print("\n", .{});
-    if (argv) |args| {
-        std.debug.print("flagless args:\n", .{});
-        for (args) |arg| {
-            std.debug.print("{s} ", .{arg});
-        } std.debug.print("\n", .{});
-    }
+    std.debug.print("flagless args:\n", .{});
+    for (argv) |arg| {
+        std.debug.print("{s} ", .{arg});
+    } std.debug.print("\n", .{});
 }
