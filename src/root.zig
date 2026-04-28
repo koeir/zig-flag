@@ -106,17 +106,7 @@ pub fn parse(
         try out_args.?.resize(allocator, out_args.?.items.len);
     }
 
-    const parsed = Type.Flags { .list = out_flags };
-
-    return .{
-        .argv = if (out_args) |oargs| oargs.items else null,
-        .flags = try populateStruct(StructFlags(defaults), parsed),
-        .allocator = allocator,
-        .inner = .{
-            .flags_array = out_flags,
-            .argv = out_args,
-        }
-    };
+    return .init(allocator, out_args, out_flags);
 }
 
 /// Returns whether if a flag is in long or short form.
@@ -144,21 +134,42 @@ pub fn ParseResult(
     comptime defaults: Type.Flags, 
 ) type {
     return struct {
+        const Self = @This();
+
         argv: ?[][:0]const u8,
         flags: StructFlags(defaults),
         allocator: std.mem.Allocator,
         inner: struct {
-            flags_array: []Type.Flag,
+            flags: []Type.Flag,
             argv: ?*std.ArrayList([:0]const u8),
         },
 
+        pub fn init(
+            allocator: std.mem.Allocator,
+            argv: ?*std.ArrayList([:0]const u8), 
+            flags_array: []Type.Flag
+        ) !Self {
+            const parsed: Type.Flags = .{ .list = flags_array };
+            const struct_flags = try populateStruct(StructFlags(defaults), parsed);
+
+            return .{
+                .allocator = allocator,
+                .flags = struct_flags,
+                .argv = if (argv) |args| args.items else null,
+                .inner = .{
+                    .argv = argv,
+                    .flags = flags_array
+                }
+            };
+        }
+
         pub fn deinit(self: *const @This()) void {
-            for (self.inner.flags_array) |*flag| {
+            for (self.inner.flags) |*flag| {
                 if (flag.value != .Input) continue;
                 if (flag.value.Input) |*input| input.deinit(self.allocator);
             }
 
-            self.allocator.free(self.inner.flags_array);
+            self.allocator.free(self.inner.flags);
 
             if (self.inner.argv) |args| {
                 args.deinit(self.allocator);
