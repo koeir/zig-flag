@@ -26,8 +26,36 @@ pub fn main(init: std.process.Init) !void {
     defer result.deinit();
 
     const flags = result.flags;
-    std.debug.print("recursive: {}\n", .{flags.recursive});
-    std.debug.print("force: {}\n", .{flags.force});
+
+    zigflag.Type.Flag.fmt = .{
+        .columns = .one,
+        .greyOutDesc = true,
+    };
+
+    try defaults.usage(stderr, .{ .tagStyle = .underline });
+
+    for (defaults.list) |flag| {
+        std.debug.print("{f}\n", .{flag});
+    }
+
+    if (flags.recursive) {
+        std.debug.print("\nRECURSIVE:\n", .{});
+        const recursive = defaults.get("recursive").?;
+        std.debug.print("{f}\n", .{recursive});
+
+        const recurseval = try defaults.getValue(zigflag.Type.Switch, "recursive");
+        std.debug.print("{}\n", .{recurseval});
+    }
+
+    if (flags.force) {
+        std.debug.print("\nFORCE:\n", .{});
+        const force = defaults.getWithFlag("force").?;
+
+        std.debug.print("{f}\n", .{force});
+        const forceval = try defaults.getValue(zigflag.Type.Switch, "force");
+        std.debug.print("{}\n", .{forceval});
+    }
+
 
     std.debug.print("\n", .{});
     if (flags.files) |files| {
