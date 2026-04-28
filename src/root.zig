@@ -23,8 +23,9 @@ pub fn parse(
         out_flags[i].default = value;
     }
 
-    var out_args: ?std.ArrayList([:0]const u8) = null;
-    errdefer if (out_args) |*a| a.deinit(allocator);
+    var out_args: ?*std.ArrayList([:0]const u8) = try allocator.create(std.ArrayList([:0]const u8));
+    out_args.?.* = try std.ArrayList([:0]const u8).initCapacity(allocator, args.vector.len);
+    errdefer if (out_args) |a| a.deinit(allocator);
 
     var isErred = false;
     var out_error: anyerror = undefined;
@@ -38,15 +39,7 @@ pub fn parse(
             // note that if the current flag is an argumentative,
             // it takes the next arg, which wouldn't go into this
             // slice
-
-            if (out_args) |*oargs| { try oargs.append(allocator, arg); }
-            else {
-                out_args = try
-                .initCapacity(allocator, args.vector.len);
-
-                try out_args.?.append(allocator, arg);
-            }
-
+            try out_args.?.append(allocator, arg);
             continue;
         };
 
@@ -105,27 +98,29 @@ pub fn parse(
         return error.NoArgs;
     }
 
-    blk: {
-    // shrink out_args it because it's guaranteed to be <= args
-        if (out_args) |*oargs| {
-            if (oargs.items.len == args.vector.len) break :blk;
-            try oargs.resize(allocator, oargs.items.len);
-    }}
+    // shrink or null out_args it because it's guaranteed to be <= args
+    if (out_args.?.items.len == 0) {
+        out_args.?.deinit(allocator);
+        out_args = null;
+    } else if (out_args.?.items.len < args.vector.len) {
+        try out_args.?.resize(allocator, out_args.?.items.len);
+    }
 
     const parsed = Type.Flags { .list = out_flags };
 
     return .{
         .argv = if (out_args) |oargs| oargs.items else null,
         .flags = try populateStruct(constructFlags(defaults), parsed),
+        .allocator = allocator,
         .inner = .{
             .flags_array = out_flags,
-            .argv = if (out_args) |*oargs| oargs else null,
+            .argv = out_args,
         }
     };
 }
 
-// Returns whether if a flag is in long or short form
-// null if it is not a flag
+/// Returns whether if a flag is in long or short form.
+/// Rerurns _null_ if it is not a flag.
 pub fn flagfmt(arg: []const u8) ?Type.FlagFmt {
     if (arg.len < 2) return null;
     if (arg[0] != '-') return null;
@@ -134,9 +129,7 @@ pub fn flagfmt(arg: []const u8) ?Type.FlagFmt {
     return Type.FlagFmt.Short;
 }
 
-// returns error messages for flag errors
-// does not include errors that should not
-// appear in production
+/// Returns error messages for select flag errors.
 pub fn error_message(err: anyerror) ?[]const u8 {
     return switch (err) {
         error.NoArgs         => "Missing arguments",
@@ -153,24 +146,29 @@ pub fn ParseResult(
     return struct {
         argv: ?[][:0]const u8,
         flags: constructFlags(defaults),
+        allocator: std.mem.Allocator,
         inner: struct {
             flags_array: []Type.Flag,
             argv: ?*std.ArrayList([:0]const u8),
         },
 
-        pub fn deinit(self: *const @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *const @This()) void {
             for (self.inner.flags_array) |*flag| {
                 if (flag.value != .Input) continue;
-                if (flag.value.Input) |*input| input.deinit(allocator);
+                if (flag.value.Input) |*input| input.deinit(self.allocator);
             }
 
-            allocator.free(self.inner.flags_array);
+            self.allocator.free(self.inner.flags_array);
 
-            if (self.inner.argv) |args| args.deinit(allocator);
+            if (self.inner.argv) |args| {
+                args.deinit(self.allocator);
+                self.allocator.destroy(args);
+            }
         }
     };
 }
 
+/// Initializes a struct for holding values of parsed arguments.
 pub fn constructFlags(comptime defaults: Type.Flags) type {
     comptime var field_names: [defaults.list.len][]const u8 = undefined;
     comptime var field_types: [defaults.list.len]type = undefined;
