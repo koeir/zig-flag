@@ -148,7 +148,10 @@ const Flags = zigflag.StructFlags(defaults);
 
 pub fn main(init: std.process.Init) !void {
     ...
-    const parsed = result.flags;
+    const parsed: Flags = result.flags;
+    // arg list that has flags removed;
+    // also removes values that were taken in by flags
+    const flagless_args: [][:0]const u8 = result.args;
 
     if (parsed.force) // whatever
 
