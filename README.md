@@ -128,7 +128,7 @@ pub fn main(init: std.process.Init) !void {
 
     // retrieving values
     const flags: Flags = result.flags;
-    const argv: ?[][:0]const u8 = result.argv;
+    const argv: [][:0]const u8 = result.argv;
     ...
 }
 ```
