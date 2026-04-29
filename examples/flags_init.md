@@ -1,8 +1,8 @@
 ```zig
 const zigflag = @import("zigflag");
 
-const SwitchFlag = zigflag.Type.SwitchFlag;
-const InputFlag = zigflag.Type.InputFlag;
+const SwitchFlag = zigflag.Type.SwitchFlag; // bool
+const InputFlag = zigflag.Type.InputFlag;   // ?[][:0]const u8
 
 const Flags = zigflag.Type.Flags;
 const Flag = zigflag.Type.Flag;

@@ -61,8 +61,8 @@ zig fetch --save git+https://github.com/koeir/zigflag
 ```zig
 const zigflag = @import("zigflag");
 
-const SwitchFlag = zigflag.Type.SwitchFlag;
-const InputFlag = zigflag.Type.InputFlag;
+const SwitchFlag = zigflag.Type.SwitchFlag; // bool
+const InputFlag = zigflag.Type.InputFlag;   // ?[][:0]const u8
 
 const Flags = zigflag.Type.Flags;
 const Flag = zigflag.Type.Flag;
@@ -111,6 +111,7 @@ pub const defaults: Flags = .{
     }
 };
 ```
+_Input_ takes always takes the next argument after it, optionally erring if the next arg has flag syntax. Input supports storing multiple arguments by default, but can be avoided setting `allowDups` to false or just checking the array len.
 
 3. [Parse flags](https://github.com/koeir/zigflag/blob/master/examples/parsing.md)
 ```zig
@@ -140,6 +141,7 @@ pub fn main(init: std.process.Init) !void {
     ...
 }
 ```
+The flags are stored in a struct in which the fields are names of the flags. Each field will have their corresponding values (Switch/bool, Input/?[][:0]const u8).
 
 4. [Use](https://github.com/koeir/zigflag/blob/master/examples/retrieving_values.md)
 ```zig
