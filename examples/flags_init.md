@@ -5,12 +5,11 @@ const SwitchFlag = zigflag.Type.SwitchFlag; // bool
 const InputFlag = zigflag.Type.InputFlag;   // ?[][:0]const u8
 
 const Flags = zigflag.Type.Flags;
-const Flag = zigflag.Type.Flag;
 
 // Initialize flags and their default values
 // name doesn't really matter
 pub const defaults: Flags = .{
-    .list = &[_]Flag
+    .list = &.
     {
         .{
             .name = "recursive",
@@ -26,7 +25,7 @@ pub const defaults: Flags = .{
             .long = "force",
             .short = 'f',
             .vanity = "-[n|f], --[no-]force",
-            .value = SwitchFlag,
+            // value is a SwitchFlag by default
             .desc = "Skip confirmation prompts",
         },
         .{  // by default, untagged flags will not be printed

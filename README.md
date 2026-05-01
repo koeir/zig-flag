@@ -56,13 +56,11 @@ const SwitchFlag = zigflag.Type.SwitchFlag; // bool
 const InputFlag = zigflag.Type.InputFlag;   // ?[][:0]const u8
 
 const Flags = zigflag.Type.Flags;
-const Flag = zigflag.Type.Flag;
 
 // Initialize flags and their default values
-// name doesn't really matter as long as the
-// members are all of type zigflag
+// name doesn't really matter
 pub const defaults: Flags = .{
-    .list = &[_]Flag
+    .list = &.
     {
         .{
             .name = "recursive",
@@ -78,7 +76,7 @@ pub const defaults: Flags = .{
             .long = "force",
             .short = 'f',
             .vanity = "-[n|f], --[no-]force",
-            .value = SwitchFlag,
+            // value is a SwitchFlag by default
             .desc = "Skip confirmation prompts",
         },
         .{  // by default, untagged flags will not be printed
@@ -102,7 +100,6 @@ pub const defaults: Flags = .{
     }
 };
 ```
-_Input_ takes always takes the next argument after it, optionally erring if the next arg has flag syntax. Input supports storing multiple arguments by default, but can be avoided setting `allowDups` to false or just checking the array len.
 
 3. [Parse flags](https://github.com/koeir/zigflag/blob/master/examples/parsing.md)
 ```zig
