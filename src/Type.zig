@@ -221,7 +221,7 @@ pub const Flag = struct {
     tag:    ?[]const u8 = null,
     long:   ?[]const u8 = null,
     short:  ?u8 = null,
-    value:  FlagVal,
+    value:  FlagVal = .{ .Switch = false },
     /// Only for show in prints, overrides long and short
     vanity: ?[]const u8 = null,
     desc:   ?[]const u8 = null,
