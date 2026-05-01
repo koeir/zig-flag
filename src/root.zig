@@ -202,7 +202,7 @@ pub fn StructFlags(comptime defaults: Type.Flags) type {
         .auto, null, &field_names, &field_types, &field_attrs);
 }
 
-pub fn populateStruct(comptime flagStruct: anytype, flags: std.StringHashMap(Type.Flag)) !flagStruct {
+fn populateStruct(comptime flagStruct: anytype, flags: std.StringHashMap(Type.Flag)) !flagStruct {
     var ret: flagStruct = undefined;
     inline for (std.meta.fields(flagStruct)) |f| {
         @field(ret, f.name) = sw: switch (f.type) {
