@@ -26,6 +26,7 @@ pub fn parse(
     var out_args: *std.ArrayList([:0]const u8) = try allocator.create(std.ArrayList([:0]const u8));
     out_args.* = try std.ArrayList([:0]const u8).initCapacity(allocator, args.vector.len);
     errdefer out_args.deinit(allocator);
+    errdefer allocator.destroy(out_args);
 
     var isErred = false;
     var out_error: anyerror = undefined;
