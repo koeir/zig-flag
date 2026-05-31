@@ -7,7 +7,7 @@ const FlagError = root.Type.FlagError;
 
 pub fn parse_flag(
     allocator: std.mem.Allocator,
-    arg: []const u8, 
+    arg: []const u8,
     fmt : root.Type.FlagFmt,
     flags: []Flag,
     args: *std.process.Args.Iterator,
@@ -19,8 +19,14 @@ pub fn parse_flag(
     };
 
     const isDefault = flag.isDefault();
-    if (!isDefault and !cfg.allowDups)
-        return root.Type.FlagError.DuplicateFlag;
+    {
+        // If it's not default and not allow dups, return dup flags error
+        // many input flags are allowed to have dups
+        const isInputType = flag.value == .Input;
+        if (!isDefault and !cfg.allowDups and
+            (!isInputType or flag.value.Input != .Many))
+                return root.Type.FlagError.DuplicateFlag;
+    }
 
     switch (flag.value) {
         .Input => {

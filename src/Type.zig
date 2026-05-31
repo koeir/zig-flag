@@ -20,14 +20,22 @@ pub const FlagFmt = enum {
 
 /// Initialization defaults
 pub const SwitchFlag: FlagVal = .{ .Switch = false };
-pub const InputFlag: FlagVal = .{ .Input = null };
+pub const InputFlag: FlagVal = .{ .Input = .{ .Single = null } };
+pub const InputFlagMany: FlagVal = .{ .Input = .{ .Many = null } };
 
 /// Type aliases
 pub const Switch = bool;
-pub const Input = ?std.ArrayList([:0]const u8);
+pub const Input = union(InputType) {
+    Many: ?std.ArrayList([:0]const u8),
+    Single: ?[:0]const u8,
+};
 
 pub const FlagType = enum {
     Switch, Input
+};
+
+pub const InputType = enum {
+    Many, Single
 };
 
 pub const FlagVal = union(FlagType) {
@@ -40,11 +48,19 @@ pub const FlagVal = union(FlagType) {
     ) std.Io.Writer.Error!void {
         switch (self) {
             .Switch => |val| try writer.print("{}", .{ val }),
-            .Input => |val| {
-                if (val == null) return;
+            .Input => |t| {
+                switch (t) {
+                    .Many => |val| {
+                        if (val == null) return;
 
-                for (val.?.items) |arg| {
-                    try writer.print("{s}, ", .{ arg });
+                        for (val.?.items) |arg| {
+                            try writer.print("{s}, ", .{ arg });
+                        }
+                    },
+                    .Single => |val| {
+                        if (val == null) return;
+                        try writer.print("{s}", .{ val.? });
+                    }
                 }
             }
         }
@@ -52,7 +68,7 @@ pub const FlagVal = union(FlagType) {
 };
 
 /// Struct for initializing default flags.
-/// Also an interface for retrieving `Type.Flag`s for printing and whatnot.
+/// Also an interface for retrieving `Type.Flag`s for printing and populating look-up table.
 pub const Flags = struct {
     const Self = @This();
 
@@ -256,16 +272,25 @@ pub const Flag = struct {
     pub fn setArg(self: *Flag, allocator: std.mem.Allocator, arg: [:0]const u8) !void {
         if (self.value != .Input ) return FlagError.FlagNotArg;
 
-        if (self.value.Input == null) self.value.Input = try .initCapacity(allocator, 1);
-        try self.value.Input.?.append(allocator, arg);
+        switch (self.value.Input) {
+            .Many => |*inner| {
+                if (inner.* == null) inner.* = try .initCapacity(allocator, 1);
+                try inner.*.?.append(allocator, arg);
+            },
+            .Single => |*inner| {
+                inner.* = arg;
+            }
+        }
     }
 
     // Pass on the init Flags struct
     pub fn isDefault(self: *const Self) bool {
-        switch (self.value) {
-            .Switch => |val| return val == false,
-            .Input => |val| return val == null,
-        }
+        return switch (self.value) {
+            .Switch => |val| !val,
+            .Input => |val| switch (val) {
+                inline else => |v| v == null
+            }
+        };
     }
 
     pub fn format(

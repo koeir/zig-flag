@@ -9,7 +9,7 @@ pub fn parse(
     comptime defaults: Type.Flags,
     errptr: *?[]const u8,
     cfg: Type.ParseConfig,
-) !ParseResult(defaults) {
+) !ParsedResult(defaults) {
     if (cfg.verbose == true and cfg.writer == null) return error.NoWriter;
     defer if (cfg.verbose) cfg.writer.?.flush()catch{};
 
@@ -127,7 +127,8 @@ pub fn error_message(err: anyerror) ?[]const u8 {
     };
 }
 
-pub fn ParseResult(
+/// Constructs and populates results for flagless arg list, flags, allocator, etc.
+pub fn ParsedResult(
     comptime defaults: Type.Flags, 
 ) type {
     return struct {
@@ -146,6 +147,7 @@ pub fn ParseResult(
             argv: *std.ArrayList([:0]const u8), 
             flags_array: []Type.Flag
         ) !Self {
+            // Using hashmap for cleaner code in populateStruct
             var parsed: std.StringHashMap(Type.Flag) = .init(allocator);
             defer parsed.deinit();
 
@@ -180,7 +182,10 @@ pub fn ParseResult(
     };
 }
 
-/// Initializes a struct for holding values of parsed arguments.
+/// Initializes a struct/look-up table for holding values of parsed flags/arguments.
+/// Essentially simplifies the defaults flag array in comptime to key:value pairs
+///
+/// Is in public scope for aliasing Flags type in main or whatever
 pub fn StructFlags(comptime defaults: Type.Flags) type {
     comptime var field_names: [defaults.list.len][]const u8 = undefined;
     comptime var field_types: [defaults.list.len]type = undefined;
@@ -188,7 +193,9 @@ pub fn StructFlags(comptime defaults: Type.Flags) type {
 
     inline for (defaults.list, 0..) |value, i| {
         const T = switch (value.value) {
-            .Input => ?[][:0]const u8,
+            .Input => |in| switch (in) {
+                    .Single => ?[:0]const u8,
+                    .Many => ?[][:0]const u8 },
             .Switch => bool,
         };
 
@@ -203,15 +210,15 @@ pub fn StructFlags(comptime defaults: Type.Flags) type {
         .auto, null, &field_names, &field_types, &field_attrs);
 }
 
+/// Populate look-up table made with StructFlags with parsed flags/arguments. 
+/// A hashmap is used just for cleaner code. The hashmap is deinitialized right after parsing flags.
 fn populateStruct(comptime flagStruct: anytype, flags: std.StringHashMap(Type.Flag)) !flagStruct {
     var ret: flagStruct = undefined;
     inline for (std.meta.fields(flagStruct)) |f| {
         @field(ret, f.name) = sw: switch (f.type) {
             bool => flags.get(f.name).?.value.Switch,
-            ?[][:0]const u8 => {
-                const val = flags.get(f.name).?.value.Input;
-                break :sw if (val) |v| v.items else null;
-            },
+            ?[:0]const u8 => break :sw flags.get(f.name).?.value.Input.Single,
+            ?[][:0]const u8 => break :sw if (flags.get(f.name).?.value.Input.Many) |v| v.items else null,
             inline else => @compileError("Invalid type during struct population.")
         };
     }
