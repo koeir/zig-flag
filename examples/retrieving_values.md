@@ -9,16 +9,12 @@ pub fn main(init: std.process.Init) !void {
     // also removes values that were taken in by flags
     const flagless_args: [][:0]const u8 = result.args;
 
-    if (parsed.force) // whatever
+    if (parsed.force) ...
 
     const recursive: bool = parsed.recursive;
-    const files: ?[][:0]const u8 = parsed.files;
+    const file: ?[:0]const u8 = parsed.file;
 
-    if (!recursive) //whatever
-
-    for (files orelse &.{}) |file| {
-        // whatever
-    }
-    ...
+    if (!recursive) ...
+    if (file) |f| ...
 }
 ```

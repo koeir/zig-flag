@@ -128,7 +128,7 @@ pub fn main(init: std.process.Init) !void {
     ...
 }
 ```
-The flags are stored in a struct in which the fields are names of the flags. Each field will have their corresponding values (`Switch`/`bool`, `Input`/`?[][:0]const u8`). The struct also holds the allocator, inner arrays, and necessary components for deinit. `gpa` is used here, but it might be more convenient to use arena allocators.
+The flags are stored in a struct in which the fields are names of the flags. Each field will have their corresponding values (`Switch`/`bool`, `Input.Single`/`?[:0]const u8`, `Input.Many`/`?[][:0]const u8`). The struct also holds the allocator, inner arrays, and necessary components for deinit. `gpa` is used here, but it might be more convenient to use arena allocators.
 
 4. [Use](https://github.com/koeir/zigflag/blob/master/examples/retrieving_values.md)
 ```zig
@@ -142,17 +142,13 @@ pub fn main(init: std.process.Init) !void {
     // also removes values that were taken in by flags
     const flagless_args: [][:0]const u8 = result.args;
 
-    if (parsed.force) // whatever
+    if (parsed.force) ...
 
     const recursive: bool = parsed.recursive;
-    const files: ?[][:0]const u8 = parsed.files;
+    const file: ?[:0]const u8 = parsed.file;
 
-    if (!recursive) //whatever
-
-    for (files orelse &.{}) |file| {
-        // whatever
-    }
-    ...
+    if (!recursive) ...
+    if (file) |f| ...
 }
 ```
 
