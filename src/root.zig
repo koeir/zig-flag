@@ -30,9 +30,7 @@ pub fn parse(
 
     var isErred = false;
     var out_error: anyerror = undefined;
-    var arg_count: usize = 0;
     while (iter.next()) |arg| {
-        arg_count += 1;
         const fmt: Type.FlagFmt = flagfmt(arg) orelse {
             // If it isn't a flag, add it to out_args and continue
             //
@@ -67,10 +65,7 @@ pub fn parse(
             .Short  => {
                 for (arg[1..], 1..) |c, i| {
                     helpers.parse_flag(
-                        allocator,
-                        &[_]u8 {c}, fmt,
-                        out_flags, &iter,
-                        cfg
+                        allocator, &[_]u8 {c}, fmt, out_flags, &iter, cfg
                     ) catch |err| {
                         isErred = true;
                         if (cfg.verbose){
@@ -89,7 +84,7 @@ pub fn parse(
     }
 
     if (isErred) return out_error;
-    if (arg_count == 1 and cfg.errOnNoArgs) {
+    if (out_args.items.len == 1 and cfg.errOnNoArgs) {
         if (!cfg.verbose) return error.NoArgs;
 
         if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
@@ -99,9 +94,8 @@ pub fn parse(
     }
 
     // shrink out_args it because it's guaranteed to be <= args
-    if (out_args.items.len < args.vector.len) {
+    if (out_args.items.len < args.vector.len)
         try out_args.resize(allocator, out_args.items.len);
-    }
 
     return .init(allocator, out_args, out_flags);
 }
