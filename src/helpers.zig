@@ -3,7 +3,7 @@ const root = @import("root.zig");
 
 const Flag = root.Type.Flag;
 const Flags = root.Type.Flags;
-const FlagError = root.Type.FlagError;
+const ParseError = root.Type.ParseError;
 
 pub fn parse_flag(
     allocator: std.mem.Allocator,
@@ -25,17 +25,17 @@ pub fn parse_flag(
         const isInputType = flag.value == .Input;
         if (!isDefault and !cfg.allowDups and
             (!isInputType or flag.value.Input != .Many))
-                return root.Type.FlagError.DuplicateFlag;
+                return root.Type.ParseError.DuplicateFlag;
     }
 
     switch (flag.value) {
         .Input => {
             const next_arg = args.next() orelse {
-                return root.Type.FlagError.ArgNoArg;
+                return root.Type.ParseError.ArgNoArg;
             };
 
             if (next_arg[0] == '-' and !cfg.allowDashInput) {
-                return root.Type.FlagError.ArgNoArg;
+                return root.Type.ParseError.ArgNoArg;
             }
 
             try flag.setArg(allocator, next_arg);
@@ -51,17 +51,17 @@ pub fn parse_flag(
 pub fn get_long_flag(
     flags: []root.Type.Flag,
     arg: []const u8,
-) FlagError!*Flag {
+) ParseError!*Flag {
     for (flags) |*flag| {
         if (std.mem.eql(u8, flag.long orelse continue, arg)) return flag;
-    } return FlagError.NoSuchFlag;
+    } return ParseError.NoSuchFlag;
 }
 
 pub fn get_short_flag(
     flags: []root.Type.Flag,
     arg: u8,
-) FlagError!*root.Type.Flag {
+) ParseError!*root.Type.Flag {
     for (flags) |*flag| {
         if (arg == flag.short orelse continue) return flag;
-    } return FlagError.NoSuchFlag;
+    } return ParseError.NoSuchFlag;
 }

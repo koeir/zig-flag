@@ -3,7 +3,7 @@ const root = @import("root.zig");
 
 const eql = std.mem.eql;
 
-pub const FlagError = error {
+pub const ParseError = error {
     NoArgs,
     NoSuchFlag,
     FlagNotSwitch,      // non-switch/non-bool Flag treated as a switch/bool
@@ -82,10 +82,10 @@ pub const Flags = struct {
     }
 
     /// Errs if not found
-    pub fn tryGet(self: *const Self, name: []const u8) FlagError!Flag {
+    pub fn tryGet(self: *const Self, name: []const u8) ParseError!Flag {
         return for (self.list) |flag| {
             if (std.mem.eql(u8, flag.name, name)) break flag;
-        } else FlagError.NoSuchFlag;
+        } else ParseError.NoSuchFlag;
     }
 
     pub fn getWithFlag(self: *const Self, flag: []const u8) ?Flag {
@@ -101,11 +101,11 @@ pub const Flags = struct {
     }
 
     /// Assert value in parameter instead of as a field in the expression
-    pub fn getValue(self: *const Self, T: type, name: []const u8) FlagError!T {
+    pub fn getValue(self: *const Self, T: type, name: []const u8) ParseError!T {
         const flag = try self.tryGet(name);
         switch (flag.value) {
             inline else => |val| {
-                if (@TypeOf(val) != T) return FlagError.TypeMismatch;
+                if (@TypeOf(val) != T) return ParseError.TypeMismatch;
                 return val;
             },
         }
@@ -266,11 +266,11 @@ pub const Flag = struct {
     pub fn toggle(self: *Flag) !void {
         if (self.value == .Switch) {
             self.value.Switch = !self.value.Switch;
-        } else return FlagError.FlagNotSwitch;
+        } else return ParseError.FlagNotSwitch;
     }
 
     pub fn setArg(self: *Flag, allocator: std.mem.Allocator, arg: [:0]const u8) !void {
-        if (self.value != .Input ) return FlagError.FlagNotArg;
+        if (self.value != .Input ) return ParseError.FlagNotArg;
 
         switch (self.value.Input) {
             .Many => |*inner| {
