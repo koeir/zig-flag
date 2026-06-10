@@ -28,9 +28,12 @@ pub fn parse(
     errdefer out_args.deinit(allocator);
     errdefer allocator.destroy(out_args);
 
+
     var isErred = false;
     var out_error: anyerror = undefined;
     while (iter.next()) |arg| {
+        errdefer errptr.* = arg;
+
         const fmt: Type.FlagFmt = flagfmt(arg) orelse {
             // If it isn't a flag, add it to out_args and continue
             //
@@ -58,12 +61,11 @@ pub fn parse(
                     }
 
                     out_error = err;
-                    errptr.* = arg[2..];
                     if (cfg.exitFirstErr) return err;
                 };
             },
             .Short  => {
-                for (arg[1..], 1..) |c, i| {
+                for (arg[1..]) |c| {
                     helpers.parse_flag(
                         allocator, &[_]u8 {c}, fmt, out_flags, &iter, cfg
                     ) catch |err| {
@@ -75,7 +77,6 @@ pub fn parse(
                         }
 
                         out_error = err;
-                        errptr.* = arg[i..i+1];
                         if (cfg.exitFirstErr) return err;
                     };
                 }
