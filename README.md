@@ -184,7 +184,7 @@ pub fn main(init: std.process.Init) !void {
 ## Errors
 
 ```zig
-pub const FlagErrs = error {
+pub const ParseErrors = error {
     NoArgs,             // argc < 2
     NoSuchFlag,         // unrecognized flag in arg list
     FlagNotSwitch,      // non-switch/non-bool Flag treated as a switch/bool
