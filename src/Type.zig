@@ -8,14 +8,6 @@ pub const Switch = bool;
 pub const Input = union(InputType) {
     Single: ?[:0]const u8,
     Many: ?std.ArrayList([:0]const u8),
-    OptionalSingle: struct {
-        enabled: Switch = false,
-        argument: ?[:0]const u8 = null,
-    },
-    OptionalMany: struct {
-        enabled: Switch = false,
-        arguments: ?std.ArrayList([:0]const u8) = null,
-    },
 };
 
 pub const FlagFmt = enum {
@@ -32,12 +24,6 @@ pub const Init = struct {
 
     /// List of strings flag
     pub const InputFlagMany: FlagVal = .{ .Input = .{ .Many = null } };
-
-    /// Boolean + optional string flag
-    pub const InputOptionalFlagSingle: FlagVal = .{ .Input = .{ .OptionalSingle = .{} } };
-
-    /// Boolean + optional list of strings flag
-    pub const InputOptionalFlagMany: FlagVal = .{ .Input = .{ .OptionalMany = .{} } };
 };
 
 pub const FlagType = enum {
@@ -45,7 +31,7 @@ pub const FlagType = enum {
 };
 
 pub const InputType = enum {
-    Many, Single, Optional
+    Many, Single
 };
 
 pub const FlagVal = union(FlagType) {
@@ -273,10 +259,11 @@ pub const Flag = struct {
     pub var fmt = Format{};
 
     // Toggles value of Switch type flag
-    pub fn toggle(self: *Flag) !void {
-        if (self.value == .Switch) {
-            self.value.Switch = !self.value.Switch;
-        } else return FindError.FlagNotSwitch;
+    pub fn toggle(self: *Flag) FindError!void {
+        return switch (self.value) {
+            .Switch => |*val| val.* = !val.*,
+            else => FindError.FlagNotSwitch,
+        };
     }
 
     pub fn setArg(self: *Flag, allocator: std.mem.Allocator, arg: [:0]const u8) !void {
