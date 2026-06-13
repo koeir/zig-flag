@@ -1,8 +1,8 @@
 const std = @import("std");
-const Type = @import("root.zig").Type;
-
 const helpers = @import("helpers.zig");
-const root = @import("root");
+const root = @import("root.zig");
+
+const Type = root.Type;
 
 // Memory returned must be freed
 pub fn parse(

@@ -1,5 +1,5 @@
 const std = @import("std");
-const root = @import("root");
+const root = @import("root.zig");
 const helpers = @import("helpers.zig");
 const eql = std.mem.eql;
 
@@ -31,7 +31,7 @@ pub const FlagType = enum {
 };
 
 pub const InputType = enum {
-    Many, Single
+    Single, Many
 };
 
 pub const FlagVal = union(FlagType) {

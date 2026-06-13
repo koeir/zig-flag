@@ -1,10 +1,10 @@
 const std = @import("std");
-const root = @import("root");
+const root = @import("root.zig");
 
 const Type = root.Type;
 const Flag = Type.Flag;
 const Flags = Type.Flags;
-const ParseError = Type.ParseError;
+const ParseError = root.ParseError;
 
 pub fn parse_flag(
     allocator: std.mem.Allocator,
@@ -26,17 +26,17 @@ pub fn parse_flag(
         const isInputType = flag.value == .Input;
         if (!isDefault and !cfg.allowDups and
             (!isInputType or flag.value.Input != .Many))
-                return root.Type.ParseError.DuplicateFlag;
+                return ParseError.DuplicateFlag;
     }
 
     switch (flag.value) {
         .Input => {
             const next_arg = args.next() orelse {
-                return root.Type.ParseError.ArgNoArg;
+                return ParseError.ArgNoArg;
             };
 
             if (next_arg[0] == '-' and !cfg.allowDashInput) {
-                return root.Type.ParseError.ArgNoArg;
+                return ParseError.ArgNoArg;
             }
 
             try flag.setArg(allocator, next_arg);
@@ -69,7 +69,7 @@ pub fn get_short_flag(
 
 /// Populate look-up table made with StructFlags with parsed flags/arguments. 
 /// A hashmap is used just for cleaner code. The hashmap is deinitialized right after parsing flags.
-fn populateStruct(comptime flagStruct: anytype, flags: std.StringHashMap(Type.Flag)) !flagStruct {
+pub fn populateStruct(comptime flagStruct: anytype, flags: std.StringHashMap(Type.Flag)) !flagStruct {
     var ret: flagStruct = undefined;
     inline for (std.meta.fields(flagStruct)) |f| {
         @field(ret, f.name) = sw: switch (f.type) {
