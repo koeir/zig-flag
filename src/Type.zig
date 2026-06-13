@@ -19,15 +19,34 @@ pub const FlagFmt = enum {
 };
 
 /// Initialization defaults
+/// Boolean flag
 pub const SwitchFlag: FlagVal = .{ .Switch = false };
+
+/// String flag
 pub const InputFlag: FlagVal = .{ .Input = .{ .Single = null } };
+
+/// List of strings flag
 pub const InputFlagMany: FlagVal = .{ .Input = .{ .Many = null } };
+
+/// Boolean + optional string flag
+pub const InputOptionalFlagSingle: FlagVal = .{ .Input = .{ .OptionalSingle = .{} } };
+
+/// Boolean + optional list of strings flag
+pub const InputOptionalFlagMany: FlagVal = .{ .Input = .{ .OptionalMany = .{} } };
 
 /// Type aliases
 pub const Switch = bool;
 pub const Input = union(InputType) {
-    Many: ?std.ArrayList([:0]const u8),
     Single: ?[:0]const u8,
+    Many: ?std.ArrayList([:0]const u8),
+    OptionalSingle: struct {
+        enabled: Switch = false,
+        argument: ?[:0]const u8 = null,
+    },
+    OptionalMany: struct {
+        enabled: Switch = false,
+        arguments: ?std.ArrayList([:0]const u8) = null,
+    },
 };
 
 pub const FlagType = enum {
@@ -35,7 +54,7 @@ pub const FlagType = enum {
 };
 
 pub const InputType = enum {
-    Many, Single
+    Many, Single, Optional
 };
 
 pub const FlagVal = union(FlagType) {
