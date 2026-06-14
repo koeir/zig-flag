@@ -10,10 +10,9 @@ pub fn parse(
     args: std.process.Args,
     comptime defaults: Type.Flags,
     errptr: *?[]const u8,
-    cfg: Type.ParseConfig,
+    cfg: ParseConfig,
 ) !Type.ParsedResult(defaults) {
     if (cfg.verbose == true and cfg.writer == null) return error.NoWriter;
-    defer if (cfg.verbose) cfg.writer.?.flush()catch{};
 
     var iter = args.iterate();
 
@@ -106,3 +105,14 @@ pub fn parse(
 
     return .init(allocator, out_args, out_flags);
 }
+
+pub const ParseConfig = struct {
+    allowDups: bool = false,
+    verbose: bool = false,
+    writer: ?*std.Io.Writer = null,
+    prefix: ?[]const u8 = null,
+    allowDashInput: bool = true,
+    errOnNoArgs: bool = false,
+    exitFirstErr: bool = true,
+    delimiter: u8 = ',',
+};

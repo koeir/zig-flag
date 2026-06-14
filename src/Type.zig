@@ -399,16 +399,6 @@ pub const Flag = struct {
     }
 };
 
-pub const ParseConfig = struct {
-    allowDups: bool = false,
-    verbose: bool = false,
-    writer: ?*std.Io.Writer = null,
-    prefix: ?[]const u8 = null,
-    allowDashInput: bool = true,
-    errOnNoArgs: bool = false,
-    exitFirstErr: bool = true,
-};
-
 /// Constructs and populates results for flagless arg list, flags, allocator, etc.
 pub fn ParsedResult(
     comptime defaults: Flags,
