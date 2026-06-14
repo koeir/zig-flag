@@ -33,8 +33,6 @@ pub fn parse(
     var isErred = false;
     var out_error: anyerror = undefined;
     while (iter.next()) |arg| {
-        errdefer errptr.* = arg;
-
         const fmt: Type.FlagFmt = helpers.flagfmt(arg) orelse {
             // If it isn't a flag, add it to out_args and continue
             //
@@ -47,6 +45,8 @@ pub fn parse(
 
         switch (fmt) {
             .Long   => {
+                errdefer errptr.* = arg;
+
                 helpers.parse_flag(
                     allocator,
                     arg[2..], fmt,
@@ -67,6 +67,7 @@ pub fn parse(
             },
             .Short  => {
                 for (arg[1..]) |c| {
+
                     helpers.parse_flag(
                         allocator, &[_]u8 {c}, fmt, out_flags, &iter, cfg
                     ) catch |err| {
@@ -76,6 +77,10 @@ pub fn parse(
                             try cfg.writer.?.print("-{c}: {s}\n", .{
                                 c, root.error_message(err) orelse @errorName(err) });
                         }
+
+                        errptr.* = try std.mem.concat(allocator, u8, &.{
+                            errptr.* orelse "-", &[_]u8{c}
+                        });
 
                         out_error = err;
                         if (cfg.exitFirstErr) return err;
