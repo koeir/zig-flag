@@ -1,23 +1,21 @@
 const zigflag = @import("./src/root.zig");
 
-const SwitchFlag = zigflag.Type.SwitchFlag;
-const InputFlag = zigflag.Type.InputFlag;
-
 const Flags = zigflag.Type.Flags;
 const Flag = zigflag.Type.Flag;
+
+const Init = zigflag.Type.Init;
 
 // Initialize flags and their default values
 // name doesn't really matter as long as the
 // members are all of type Flag
 pub const defaults: Flags = .{
-    .list = &[_]Flag
+    .list = &.
     {
         .{
             .name = "recursive",
             .tag = "Switches",
             .long = "recursive",
             .short = 'r',
-            .value = SwitchFlag,
             .desc = "Recurse into directories",
         },
         .{
@@ -26,14 +24,12 @@ pub const defaults: Flags = .{
             .long = "force",
             .short = 'f',
             .vanity = "-[n|f], --[no-]force",
-            .value = SwitchFlag,
             .desc = "Skip confirmation prompts",
         },
         .{  // by default, untagged flags will not be printed
             .name = "no-force",
             .long = "no-force",
             .short = 'n',
-            .value = SwitchFlag,
             .desc = "Do not skip confirmation prompts",
         },
         // Arguments will accept the next argv
@@ -44,7 +40,7 @@ pub const defaults: Flags = .{
             .tag = "Input",
             .long = "path",
             .short = 'p',
-            .value = InputFlag,
+            .value = Init.InputFlagMany,
             .desc = "Path to file",
         },
     }

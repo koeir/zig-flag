@@ -5,7 +5,7 @@ const Flags = zigflag.StructFlags(defaults);
 pub fn main(init: std.process.Init) !void {
     ...
     // Make config
-    const parsecfg: zigflag.Type.ParseConfig = .{
+    const parsecfg: zigflag.ParseConfig = .{
         .allowDashInput = true,
         .allowDups = true,
         .verbose = true,
@@ -15,8 +15,8 @@ pub fn main(init: std.process.Init) !void {
     
     // points to erred flag
     var errptr: ?[]const u8 = null;
-    // actual parse, returns a tuple of Flags and resulting args
-    const result = zigflag.parse(init.arena.allocator(), init.minimal.args, defaults, &errptr, parsecfg)
+    defer if (errptr) |arg| init.gpa.free(arg); // parse allocates memory to errptr
+    const result = zigflag.parse(init.gpa, init.minimal.args, defaults, &errptr, parsecfg)
     catch {
         try stderr.writeAll("\n");
         try stderr.writeAll("Usage: program [OPTIONS] <files>\n\n");

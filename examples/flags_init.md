@@ -1,15 +1,14 @@
 ```zig
-const zigflag = @import("zigflag");
-
-const Init = zigflag.Type.Init;
-const SwitchFlag = Init.SwitchFlag;     // bool (default flag type)
-const InputFlag = Init.InputFlag;       // ?[:0]const u8
-const InputFlag = Init.InputFlagMany;   // ?[][:0]const u8
+const zigflag = @import("./src/root.zig");
 
 const Flags = zigflag.Type.Flags;
+const Flag = zigflag.Type.Flag;
+
+const Init = zigflag.Type.Init;
 
 // Initialize flags and their default values
-// name doesn't really matter
+// name doesn't really matter as long as the
+// members are all of type Flag
 pub const defaults: Flags = .{
     .list = &.
     {
@@ -26,7 +25,6 @@ pub const defaults: Flags = .{
             .long = "force",
             .short = 'f',
             .vanity = "-[n|f], --[no-]force",
-            // value is a SwitchFlag by default
             .desc = "Skip confirmation prompts",
         },
         .{  // by default, untagged flags will not be printed
@@ -39,11 +37,11 @@ pub const defaults: Flags = .{
         // e.g. -prf noob
         // "noob" will be accepted as the file
         .{
-            .name = "file",
+            .name = "files",
             .tag = "Input",
             .long = "path",
             .short = 'p',
-            .value = InputFlag,
+            .value = Init.InputFlagMany,
             .desc = "Path to file",
         },
     }
