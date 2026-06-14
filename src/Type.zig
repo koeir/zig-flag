@@ -84,6 +84,7 @@ pub const Flags = struct {
         } else FindError.NoSuchFlag;
     }
 
+    /// Assumes that, if it's a short, is only one char long.
     pub fn getWithFlag(self: *const Self, flag: []const u8) ?Flag {
         return for (self.list) |ret| {
             if (ret.short) |short| {
