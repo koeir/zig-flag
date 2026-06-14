@@ -4,6 +4,7 @@ const parser = @import("parse.zig");
 
 pub const Type = @import("Type.zig");
 pub const parse = parser.parse;
+pub const flagfmt = helpers.flagfmt;
 
 /// Returns error messages for select flag errors.
 pub fn error_message(err: anyerror) ?[]const u8 {
