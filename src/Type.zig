@@ -14,6 +14,14 @@ pub const FlagFmt = enum {
     Long, Short,
 };
 
+pub const FlagType = enum {
+    Switch, Input
+};
+
+pub const InputType = enum {
+    Single, Many
+};
+
 /// Initialization defaults
 pub const Init = struct {
     /// Boolean flag
@@ -24,14 +32,6 @@ pub const Init = struct {
 
     /// List of strings flag
     pub const InputFlagMany: FlagVal = .{ .Input = .{ .Many = null } };
-};
-
-pub const FlagType = enum {
-    Switch, Input
-};
-
-pub const InputType = enum {
-    Single, Many
 };
 
 pub const FlagVal = union(FlagType) {
