@@ -1,9 +1,10 @@
 ```zig
 const zigflag = @import("zigflag");
 
-const SwitchFlag = zigflag.Type.SwitchFlag;     // bool
-const InputFlag = zigflag.Type.InputFlag;       // ?[:0]const u8
-const InputFlag = zigflag.Type.InputFlagMany;   // ?[][:0]const u8
+const Init = zigflag.Type.Init;
+const SwitchFlag = Init.SwitchFlag;     // bool (default flag type)
+const InputFlag = Init.InputFlag;       // ?[:0]const u8
+const InputFlag = Init.InputFlagMany;   // ?[][:0]const u8
 
 const Flags = zigflag.Type.Flags;
 
@@ -17,7 +18,6 @@ pub const defaults: Flags = .{
             .tag = "Switches",
             .long = "recursive",
             .short = 'r',
-            .value = SwitchFlag,
             .desc = "Recurse into directories",
         },
         .{
@@ -33,7 +33,6 @@ pub const defaults: Flags = .{
             .name = "no-force",
             .long = "no-force",
             .short = 'n',
-            .value = SwitchFlag,
             .desc = "Do not skip confirmation prompts",
         },
         // Arguments will accept the next argv

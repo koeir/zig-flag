@@ -52,9 +52,10 @@ zig fetch --save git+https://github.com/koeir/zigflag
 ```zig
 const zigflag = @import("zigflag");
 
-const SwitchFlag = zigflag.Type.SwitchFlag;     // bool
-const InputFlag = zigflag.Type.InputFlag;       // ?[:0]const u8
-const InputFlag = zigflag.Type.InputFlagMany;   // ?[][:0]const u8
+const Init = zigflag.Type.Init;
+const SwitchFlag = Init.SwitchFlag;     // bool (default flag type)
+const InputFlag = Init.InputFlag;       // ?[:0]const u8
+const InputFlag = Init.InputFlagMany;   // ?[][:0]const u8
 
 const Flags = zigflag.Type.Flags;
 
@@ -68,7 +69,6 @@ pub const defaults: Flags = .{
             .tag = "Switches",
             .long = "recursive",
             .short = 'r',
-            .value = SwitchFlag,
             .desc = "Recurse into directories",
         },
         .{
@@ -84,7 +84,6 @@ pub const defaults: Flags = .{
             .name = "no-force",
             .long = "no-force",
             .short = 'n',
-            .value = SwitchFlag,
             .desc = "Do not skip confirmation prompts",
         },
         // Arguments will accept the next argv
@@ -121,12 +120,17 @@ pub fn main(init: std.process.Init) !void {
     // points to erred flag
     var errptr: ?[]const u8 = null;
     // actual parse, returns a tuple of Flags and resulting args
-    const result = try zigflag.parse(init.gpa, min.args, defaults, &errptr, parsecfg);
-    defer result.deinit();
+    const result = zigflag.parse(init.arena.allocator(), init.minimal.args, defaults, &errptr, parsecfg)
+    catch {
+        try stderr.writeAll("\n");
+        try stderr.writeAll("Usage: program [OPTIONS] <files>\n\n");
+        try defaults.usage(stderr, .{ .tagStyle = .underline });
+        return;
+    }; defer result.deinit();
 
     // retrieving values
     const flags: Flags = result.flags;
-    const argv: [][:0]const u8 = result.argv;
+    const argv: ?[][:0]const u8 = result.argv;
     ...
 }
 ```
