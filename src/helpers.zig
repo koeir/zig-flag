@@ -1,5 +1,6 @@
 const std = @import("std");
 const root = @import("root.zig");
+const mem = std.mem;
 
 const Type = root.Type;
 const Flag = Type.Flag;
@@ -7,7 +8,7 @@ const Flags = Type.Flags;
 const ParseError = root.ParseError;
 
 pub fn parse_flag(
-    allocator: std.mem.Allocator,
+    allocator: mem.Allocator,
     arg: []const u8,
     fmt : root.Type.FlagFmt,
     flags: []Flag,
@@ -54,7 +55,7 @@ pub fn get_long_flag(
     arg: []const u8,
 ) ParseError!*Flag {
     for (flags) |*flag| {
-        if (std.mem.eql(u8, flag.long orelse continue, arg)) return flag;
+        if (mem.eql(u8, flag.long orelse continue, arg)) return flag;
     } return ParseError.NoSuchFlag;
 }
 
