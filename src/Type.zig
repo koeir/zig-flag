@@ -236,7 +236,7 @@ pub const Flag = struct {
     /// Only for show in prints, overrides long and short
     vanity: ?[]const u8 = null,
     desc:   ?[]const u8 = null,
-    /// A pointer for the `ParseResult`'s `Flags` to the initialized ones
+    /// A pointer for the `ParsedResult`'s `Flags` to the initialized ones
     default: *const Flag = undefined,
 
     /// Center padding is calculated by
