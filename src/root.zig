@@ -114,7 +114,7 @@ pub const ParseConfig = struct {
     allowDashInput: bool = true,
     errOnNoArgs: bool = false,
     exitFirstErr: bool = true,
-    delimiter: u8 = ',',
+    delimiters: []const u8 = ",",
 };
 
 /// Returns error messages for select flag errors.

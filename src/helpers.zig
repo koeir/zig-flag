@@ -13,7 +13,7 @@ pub fn parse_flag(
     fmt : root.Type.FlagFmt,
     flags: []Flag,
     args: *std.process.Args.Iterator,
-    cfg: root.Type.ParseConfig
+    cfg: root.ParseConfig
 ) !void {
     const flag: *Flag = blk: switch (fmt) {
         .Long => break :blk try get_long_flag(flags, arg),
@@ -40,7 +40,7 @@ pub fn parse_flag(
                 return ParseError.ArgNoArg;
             }
 
-            try flag.setArg(allocator, next_arg);
+            try flag.setArg(allocator, next_arg, cfg.delimiters);
         },
 
         .Switch => {
@@ -68,16 +68,16 @@ pub fn get_short_flag(
     } return ParseError.NoSuchFlag;
 }
 
-/// Populate look-up table made with StructFlags with parsed flags/arguments. 
+/// Populate look-up table made with StructFlags with parsed flags/arguments.
 /// A hashmap is used just for cleaner code. The hashmap is deinitialized right after parsing flags.
 pub fn populateStruct(comptime flagStruct: anytype, flags: std.StringHashMap(Type.Flag)) !flagStruct {
     var ret: flagStruct = undefined;
     inline for (std.meta.fields(flagStruct)) |f| {
         @field(ret, f.name) = sw: switch (f.type) {
-            bool => flags.get(f.name).?.value.Switch,
-            ?[:0]const u8 => break :sw flags.get(f.name).?.value.Input.Single,
-            ?[][:0]const u8 => break :sw if (flags.get(f.name).?.value.Input.Many) |v| v.items else null,
-            inline else => @compileError("Invalid type during struct population.")
+            bool            => flags.get(f.name).?.value.Switch,
+            ?[:0]const u8   => break :sw flags.get(f.name).?.value.Input.Single,
+            ?[][]const u8   => break :sw if (flags.get(f.name).?.value.Input.Many) |v| v.items else null,
+            inline else     => @compileError("Invalid type during struct population.")
         };
     }
 

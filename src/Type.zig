@@ -1,13 +1,13 @@
 const std = @import("std");
 const root = @import("root.zig");
 const helpers = @import("helpers.zig");
-const eql = std.mem.eql;
+const mem = std.mem;
+const eql = mem.eql;
 
-/// Type aliases
 pub const Switch = bool;
 pub const Input = union(InputType) {
     Single: ?[:0]const u8,
-    Many: ?std.ArrayList([:0]const u8),
+    Many: ?std.ArrayList([]const u8),
 };
 
 pub const FlagFmt = enum {
@@ -73,14 +73,14 @@ pub const Flags = struct {
     /// Returns null if not found
     pub fn get(self: *const Self, name: []const u8) ?Flag {
         return for (self.list) |flag| {
-            if (std.mem.eql(u8, flag.name, name)) break flag;
+            if (eql(u8, flag.name, name)) break flag;
         } else null;
     }
 
     /// Errs if not found
     pub fn tryGet(self: *const Self, name: []const u8) FindError!Flag {
         return for (self.list) |flag| {
-            if (std.mem.eql(u8, flag.name, name)) break flag;
+            if (eql(u8, flag.name, name)) break flag;
         } else FindError.NoSuchFlag;
     }
 
@@ -92,7 +92,7 @@ pub const Flags = struct {
             }
 
             if (ret.long) |long| {
-                if (std.mem.eql(u8, flag, long)) break ret;
+                if (eql(u8, flag, long)) break ret;
             }
         } else null;
     }
@@ -115,7 +115,7 @@ pub const Flags = struct {
     ) Flag {
         comptime {
             for (defaults.list) |flag| {
-                if (std.mem.eql(u8, name, flag.name))
+                if (eql(u8, name, flag.name))
                     return flag;
             } @compileError(name ++ ": Flag not found.");
         }
@@ -144,7 +144,7 @@ pub const Flags = struct {
         }
     }
 
-    pub fn deinit(self: *const Self, allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *const Self, allocator: mem.Allocator) void {
         allocator.free(self.list);
     }
 
@@ -184,7 +184,7 @@ pub const Flags = struct {
             // if the flags of tag is already printed,
             // continue
             const already_done = for (done) |did| {
-                if (std.mem.eql(u8, did, tag)) break true;
+                if (eql(u8, did, tag)) break true;
             } else false;
             if (already_done) continue;
 
@@ -202,7 +202,7 @@ pub const Flags = struct {
 
             // print all flags of the tag
             for (self.list) |f| {
-                if (!std.mem.eql(u8, f.tag orelse continue, tag)) continue;
+                if (!eql(u8, f.tag orelse continue, tag)) continue;
                 try writer.print("{f}\n", .{ f });
             }
 
@@ -265,13 +265,15 @@ pub const Flag = struct {
         };
     }
 
-    pub fn setArg(self: *Flag, allocator: std.mem.Allocator, arg: [:0]const u8) !void {
+    pub fn setArg(self: *Flag, allocator: mem.Allocator, arg: [:0]const u8, delimiters: []const u8) !void {
         if (self.value != .Input ) return FindError.FlagNotArg;
 
         switch (self.value.Input) {
             .Many => |*inner| {
                 if (inner.* == null) inner.* = try .initCapacity(allocator, 1);
-                try inner.*.?.append(allocator, arg);
+
+                var split = mem.splitAny(u8, arg, delimiters);
+                while (split.next()) |slice| try inner.*.?.append(allocator, slice);
             },
             .Single => |*inner| {
                 inner.* = arg;
@@ -408,14 +410,14 @@ pub fn ParsedResult(
 
         argv: [][:0]const u8,
         flags: StructFlags(defaults),
-        allocator: std.mem.Allocator,
+        allocator: mem.Allocator,
         inner: struct {
             flags: []Flag,
             argv: *std.ArrayList([:0]const u8),
         },
 
         pub fn init(
-            allocator: std.mem.Allocator,
+            allocator: mem.Allocator,
             argv: *std.ArrayList([:0]const u8),
             flags_array: []Flag
         ) !Self {
@@ -443,7 +445,7 @@ pub fn ParsedResult(
         pub fn deinit(self: *const @This()) void {
             for (self.inner.flags) |*flag| {
                 if (flag.value != .Input) continue;
-                if (flag.value.Input) |*input| input.deinit(self.allocator);
+                if (flag.value.Input.Many) |*input| input.deinit(self.allocator);
             }
 
             self.allocator.free(self.inner.flags);
@@ -494,7 +496,8 @@ pub fn StructFlags(comptime defaults: Flags) type {
         const T = switch (value.value) {
             .Input => |in| switch (in) {
                     .Single => ?[:0]const u8,
-                    .Many => ?[][:0]const u8 },
+                    .Many   => ?[][]const u8
+            },
             .Switch => bool,
         };
 
