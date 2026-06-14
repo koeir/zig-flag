@@ -187,8 +187,6 @@ pub const Flags = struct {
             } else false;
             if (already_done) continue;
 
-            // because columns .one already prints newline
-            if (Flag.fmt.columns == .two) try writer.writeAll("\n");
             // print padding before tags
             for (0..cfg.padding_left) |_| {
                 try writer.writeAll(" ");
