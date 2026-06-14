@@ -402,9 +402,7 @@ pub const Flag = struct {
 };
 
 /// Constructs and populates results for flagless arg list, flags, allocator, etc.
-pub fn ParsedResult(
-    comptime defaults: Flags,
-) type {
+pub fn ParsedResult(comptime defaults: Flags) type {
     return struct {
         const Self = @This();
 
