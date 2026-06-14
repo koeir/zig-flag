@@ -411,7 +411,7 @@ pub const ParseConfig = struct {
 
 /// Constructs and populates results for flagless arg list, flags, allocator, etc.
 pub fn ParsedResult(
-    comptime defaults: Flags, 
+    comptime defaults: Flags,
 ) type {
     return struct {
         const Self = @This();
@@ -426,7 +426,7 @@ pub fn ParsedResult(
 
         pub fn init(
             allocator: std.mem.Allocator,
-            argv: *std.ArrayList([:0]const u8), 
+            argv: *std.ArrayList([:0]const u8),
             flags_array: []Flag
         ) !Self {
             // Using hashmap for cleaner code in populateStruct
@@ -457,7 +457,7 @@ pub fn ParsedResult(
             }
 
             self.allocator.free(self.inner.flags);
-            
+
             self.inner.argv.deinit(self.allocator);
             self.allocator.destroy(self.inner.argv);
         }
@@ -469,6 +469,33 @@ pub fn ParsedResult(
 ///
 /// Is in public scope for aliasing Flags type in main or whatever
 pub fn StructFlags(comptime defaults: Flags) type {
+    // Checks for duplicate names, longs, shorts, and if a flag is missing short/long
+    inline for (defaults.list, 0..) |flag1, i| {
+        if (flag1.short == null and flag1.long == null)
+            @compileError("option has no flag: " ++ flag1.name);
+
+        inline for (defaults.list, 0..) |flag2, j| {
+            if (i == j) continue;
+
+            if (eql(u8, flag1.name, flag2.name))
+                @compileError("option has duplicate(s) name: " ++ flag1.name);
+
+            if (flag1.long) |long1| {
+                if (flag2.long) |long2| {
+                    if (eql(u8, long1, long2))
+                        @compileError("option has duplicate(s) long flag: " ++ flag1.name);
+                }
+            }
+
+            if (flag1.short) |short1| {
+                if (flag2.short) |short2| {
+                    if (short1 == short2)
+                        @compileError("option has duplicate(s) short flag: " ++ flag1.name);
+                }
+            }
+        }
+    }
+
     comptime var field_names: [defaults.list.len][]const u8 = undefined;
     comptime var field_types: [defaults.list.len]type = undefined;
     comptime var field_attrs: [defaults.list.len]std.builtin.Type.StructField.Attributes = undefined;
