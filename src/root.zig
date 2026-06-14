@@ -1,12 +1,14 @@
 const std = @import("std");
 const helpers = @import("helpers.zig");
 
+const mem = std.mem;
+
 pub const Type = @import("Type.zig");
 pub const flagfmt = helpers.flagfmt;
 
 // Memory returned must be freed
 pub fn parse(
-    allocator: std.mem.Allocator,
+    allocator: mem.Allocator,
     args: std.process.Args,
     comptime defaults: Type.Flags,
     errptr: *?[]const u8,
@@ -44,8 +46,12 @@ pub fn parse(
 
         switch (fmt) {
             .Long   => {
-                errdefer errptr.* = arg;
-
+                // Dupe instead of just assigning so that it is safe to
+                //  `if errptr.* != allocator.free(errptr.*)`
+                //  so that error handling for short flags is prettier lol
+                //
+                // Technically not needed if arena allocator is used, and arena is recommended,
+                // but it's not good practice to assume that it would be used all the time
                 helpers.parse_flag(
                     allocator,
                     arg[2..], fmt,
@@ -61,12 +67,12 @@ pub fn parse(
                     }
 
                     out_error = err;
+                    errptr.* = try allocator.dupeSentinel(u8, arg, 0);
                     if (cfg.exitFirstErr) return err;
                 };
             },
             .Short  => {
                 for (arg[1..]) |c| {
-
                     helpers.parse_flag(
                         allocator, &[_]u8 {c}, fmt, out_flags, &iter, cfg
                     ) catch |err| {
@@ -77,7 +83,7 @@ pub fn parse(
                                 c, error_message(err) orelse @errorName(err) });
                         }
 
-                        errptr.* = try std.mem.concat(allocator, u8, &.{
+                        errptr.* = try mem.concat(allocator, u8, &.{
                             errptr.* orelse "-", &[_]u8{c}
                         });
 
