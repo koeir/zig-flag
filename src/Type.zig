@@ -281,7 +281,7 @@ pub const Flag = struct {
         }
     }
 
-    // Pass on the init Flags struct
+    /// Assumes that default for switch is false, and null for inputs
     pub fn isDefault(self: *const Self) bool {
         return switch (self.value) {
             .Switch => |val| !val,
