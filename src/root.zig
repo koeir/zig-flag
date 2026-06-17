@@ -40,7 +40,7 @@ pub fn parse(
         allocator.free(out_flags);
         out_args.deinit(allocator);
         allocator.destroy(out_args);
-    } else { 
+    } else {
         // else free errors
         errs.deinit(allocator);
         allocator.destroy(errs);
@@ -50,16 +50,16 @@ pub fn parse(
         const fmt: Type.FlagFmt = helpers.flagfmt(arg) orelse {
             // If it isn't a flag, add it to out_args and continue
             //
-            // note that if the current flag is an argumentative,
-            // it takes the next arg, which wouldn't go into this
-            // slice
+            // note that input flags take the next arg,
+            // which would be skipped by the iterator
             try out_args.append(allocator, arg);
             continue;
         };
 
         // Slice out dashes
         switch (fmt) {
-            .Long   => helpers.parse_flag(allocator, arg[2..], fmt, out_flags, &iter, cfg) catch |err| {
+            .Long   => helpers.parse_flag(allocator, arg[2..], fmt, out_flags, &iter, cfg)
+            catch |err| {
                 try errs.append(allocator, .{
                     .cause = try allocator.dupe(u8, arg),
                     .err = err
@@ -67,7 +67,8 @@ pub fn parse(
             },
             // Iterate through each char
             .Short  => for (arg[1..]) |c| {
-                helpers.parse_flag(allocator, &[_]u8 {c}, fmt, out_flags, &iter, cfg) catch |err| {
+                helpers.parse_flag(allocator, &[_]u8 {c}, fmt, out_flags, &iter, cfg)
+                catch |err| {
                     const cause = try mem.concat(allocator, u8, &.{
                         "-", &.{c}
                     });
@@ -80,7 +81,7 @@ pub fn parse(
             },
         }
 
-        if (errs.items.len > 0 and cfg.exitFirstErr) 
+        if (errs.items.len > 0 and cfg.exitFirstErr)
             return .{ .Err = errs };
     }
 
@@ -116,7 +117,6 @@ pub const ParseError = error {
     FlagNotArg,         // non-argumentative flag treated as an argumentative
     DuplicateFlag,
     ArgNoArg,           // no argument given to argumentative flag
-    NoWriter,
     TypeMismatch,       // failure to retrieve value, type given does not match value
 };
 
