@@ -14,21 +14,24 @@ pub fn main(init: std.process.Init) !void {
 
     const parsecfg: zigflag.ParseConfig = .{
         .allowDashInput = true,
+        .exitFirstErr = false,
         .allowDups = true,
-        .verbose = true,
-        .writer = stderr,
-        .prefix = "my-program: ",
         .delimiters = ",:"
     };
     
-    // points to erred flag
-    var errptr: ?[]const u8 = null;
-    defer if (errptr) |arg| init.gpa.free(arg); // parse allocates memory to errptr
-    const result = try zigflag.parse(init.gpa, min.args, defaults, &errptr, parsecfg);
-    defer result.deinit();
+    const parse = try zigflag.parse(init.gpa, min.args, defaults, parsecfg);
+    defer parse.deinit(init.gpa);
 
-    const flags = result.flags;
-    const argv = result.argv;
+    if (parse.errs) |errs| {
+        for (errs.items) |err| {
+            std.debug.print("{s}: {s}\n", .{ err.cause, @errorName(err.err) });
+        }
+
+        return;
+    }
+
+    const flags = parse.results.?.flags;
+    const argv = parse.results.?.argv;
 
     zigflag.Type.Flag.fmt = .{
         .columns = .one,
@@ -37,6 +40,7 @@ pub fn main(init: std.process.Init) !void {
 
     try defaults.usage(stderr, .{ .tagStyle = .underline });
 
+    std.debug.print("INDIVIDUAL PRINTING:\n", .{});
     for (defaults.list) |flag| {
         std.debug.print("{f}\n", .{flag});
     }
