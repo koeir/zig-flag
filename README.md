@@ -39,7 +39,7 @@ zig fetch --save git+https://github.com/koeir/zigflag
 
 2. [Initialize flags](https://github.com/koeir/zigflag/blob/master/examples/flags_init.md)
 ```zig
-pub const defaults: Flags = .{
+pub const defaults: zigflag.Type.Flags = .{
     .list = &.
     {
         .{
@@ -54,7 +54,7 @@ pub const defaults: Flags = .{
             .tag = "Input",
             .long = "path",
             .short = 'p',
-            .value = InputFlag,
+            .value = zigflag.Type.Init.InputFlag,
             .desc = "Path to file",
         },
     }
@@ -141,6 +141,8 @@ pub fn main(init: std.process.Init) !void {
   Input:
      -p <file>, --path <file>..... Path to file
 ```
+
+See [example.zig](examples/zig/example.zig) for more information.
 
 ## Errors
 
