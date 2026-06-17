@@ -10,17 +10,6 @@ API documentation can be found [here](https://koeir.github.io) or made with [zig
 - [Simple interface](README.md#usage)
 - [Returns argv list without flags](README.md#usage)
 
-## Config Options
-
-### Parse Config
-See [Type.ParseConfig](src/Type.zig)
-- **allowDups**: Don't error when duplicate flags are set. _Default is false_.
-- **verbose**: Print out error messages when errors occur. _Default is false_.
-- **writer**: Required when using verbose option. Doesn't really do anything without it. _Default is null_.
-- **prefix**: Print out a custom string for verbose messages. _Default is null_.
-- **allowDashInput**: Allow input type flags to hold strings that begin with "-". _Default is true_.
-- **errOnNoArgs**: Outputs an error if there are no arguments except argv[0]. _Default is false_.
-- **exitFirstErr**: Exit on first error found. _Default is true_.
 
 ### Print Formatting
 See [examples/formatting.md](examples/formatting.md)
@@ -50,17 +39,6 @@ zig fetch --save git+https://github.com/koeir/zigflag
 
 2. [Initialize flags](https://github.com/koeir/zigflag/blob/master/examples/flags_init.md)
 ```zig
-const zigflag = @import("zigflag");
-
-const Init = zigflag.Type.Init;
-const SwitchFlag = Init.SwitchFlag;     // bool (default flag type)
-const InputFlag = Init.InputFlag;       // ?[:0]const u8
-const InputFlag = Init.InputFlagMany;   // ?[][:0]const u8
-
-const Flags = zigflag.Type.Flags;
-
-// Initialize flags and their default values
-// name doesn't really matter
 pub const defaults: Flags = .{
     .list = &.
     {
@@ -71,24 +49,6 @@ pub const defaults: Flags = .{
             .short = 'r',
             .desc = "Recurse into directories",
         },
-        .{
-            .name = "force",
-            .tag = "Switches",
-            .long = "force",
-            .short = 'f',
-            .vanity = "-[n|f], --[no-]force",
-            // value is a SwitchFlag by default
-            .desc = "Skip confirmation prompts",
-        },
-        .{  // by default, untagged flags will not be printed
-            .name = "no-force",
-            .long = "no-force",
-            .short = 'n',
-            .desc = "Do not skip confirmation prompts",
-        },
-        // Arguments will accept the next argv
-        // e.g. -prf noob
-        // "noob" will be accepted as the file
         .{
             .name = "file",
             .tag = "Input",
@@ -103,59 +63,56 @@ pub const defaults: Flags = .{
 
 3. [Parse flags](https://github.com/koeir/zigflag/blob/master/examples/parsing.md)
 ```zig
-const defaults = @import("./init_flags.zig").defaults;
-const Flags = zigflag.StructFlags(defaults);
-
 pub fn main(init: std.process.Init) !void {
     ...
     // Make config
-    const parsecfg: zigflag.Type.ParseConfig = .{
+    const parsecfg: zigflag.ParseConfig = .{
         .allowDashInput = true,
+        .exitFirstErr = false,
         .allowDups = true,
-        .verbose = true,
-        .writer = stderr,
-        .prefix = "my-program: "
+        .delimiters = ",:"
     };
     
-    // points to erred flag
-    var errptr: ?[]const u8 = null;
-    // actual parse, returns a tuple of Flags and resulting args
-    const result = zigflag.parse(init.arena.allocator(), init.minimal.args, defaults, &errptr, parsecfg)
-    catch {
-        try stderr.writeAll("\n");
-        try stderr.writeAll("Usage: program [OPTIONS] <files>\n\n");
-        try defaults.usage(stderr, .{ .tagStyle = .underline });
-        return;
-    }; defer result.deinit();
+    const parse = try zigflag.parse(init.gpa, min.args, defaults, parsecfg);
+    defer parse.deinit(init.gpa);
 
-    // retrieving values
-    const flags: Flags = result.flags;
-    const argv: ?[][:0]const u8 = result.argv;
+    // error checking and retrieving values
+    const result = switch (parse) {
+        .Ok  => | ok | ok,
+        .Err => |errs| {
+            for (errs.items) |err| {
+                std.debug.print("{s}: {s}\n", .{
+                    err.cause, @errorName(err.err)
+                });
+            } return;
+        },
+    };
     ...
-}
 ```
 The flags are stored in a struct in which the fields are names of the flags. Each field will have their corresponding values (`Switch`/`bool`, `Input.Single`/`?[:0]const u8`, `Input.Many`/`?[][:0]const u8`). The struct also holds the allocator, inner arrays, and necessary components for deinit. `gpa` is used here, but it might be more convenient to use arena allocators.
 
 4. [Use](https://github.com/koeir/zigflag/blob/master/examples/retrieving_values.md)
 ```zig
-const defaults = @import("./init_flags.zig").defaults;
-const Flags = zigflag.StructFlags(defaults);
-
+...
 pub fn main(init: std.process.Init) !void {
     ...
-    const parsed: Flags = result.flags;
+    const opts: Flags = result.flags;
     // arg list that has flags removed;
-    // also removes values that were taken in by flags
-    const flagless_args: [][:0]const u8 = result.args;
+    // which includes values that were taken in by input type flags
+    const args: [][:0]const u8 = result.argv;
 
-    if (parsed.force) ...
+    if (opts.force) ...
 
-    const recursive: bool = parsed.recursive;
-    const file: ?[:0]const u8 = parsed.file;
+    const recursive: bool = opts.recursive;
+    const path: ?[:0]const u8 = opts.path;
 
     if (!recursive) ...
-    if (file) |f| ...
-}
+    std.debug.print("{s}\n", .{ path orelse "nowhere" });
+
+    if (opts.files) |files| {
+        for (files) |file| ...
+    }
+    ...
 ```
 
 5. [Optionally customize](examples/formatting.md)
@@ -195,7 +152,6 @@ pub const ParseErrors = error {
     FlagNotArg,         // non-input type flag treated as an input type
     DuplicateFlag,      // flag appears twice in arg list; can be ignored with config
     ArgNoArg,           // no argument given to input type flag
-    NoWriter,           // no writer given when verbose is true
     TypeMismatch,       // a more general FlagNotSwitch/FlagNotArg
 }
 ```
