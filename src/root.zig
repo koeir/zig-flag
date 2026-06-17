@@ -97,6 +97,7 @@ pub fn parse(
     return .init(allocator, out_args, out_flags);
 }
 
+/// Setting allowDups to true allows InputSingles to be overwritten if its flag is repeated
 pub const ParseConfig = struct {
     allowDups: bool = false,
     allowDashInput: bool = true,
