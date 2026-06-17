@@ -1,32 +1,36 @@
 ```zig
+const std = @import("std");
+const zigflag = @import("zigflag");
 const defaults = @import("./init_flags.zig").defaults;
-const Flags = zigflag.StructFlags(defaults);
+const Flags = zigflag.Type.StructFlags(defaults);
 
 pub fn main(init: std.process.Init) !void {
     ...
     // Make config
     const parsecfg: zigflag.ParseConfig = .{
         .allowDashInput = true,
+        .exitFirstErr = false,
         .allowDups = true,
-        .verbose = true,
-        .writer = stderr,
-        .prefix = "my-program: "
+        .delimiters = ",:"
     };
     
-    // points to erred flag
-    var errptr: ?[]const u8 = null;
-    defer if (errptr) |arg| init.gpa.free(arg); // parse allocates memory to errptr
-    const result = zigflag.parse(init.gpa, init.minimal.args, defaults, &errptr, parsecfg)
-    catch {
-        try stderr.writeAll("\n");
-        try stderr.writeAll("Usage: program [OPTIONS] <files>\n\n");
-        try defaults.usage(stderr, .{ .tagStyle = .underline });
-        return;
-    }; defer result.deinit();
+    const parse = try zigflag.parse(init.gpa, min.args, defaults, parsecfg);
+    defer parse.deinit(init.gpa);
 
-    // retrieving values
+    // error checking and retrieving values
+    const result = switch (parse) {
+        .Ok  => | ok | ok,
+        .Err => |errs| {
+            for (errs.items) |err| {
+                std.debug.print("{s}: {s}\n", .{
+                    err.cause, @errorName(err.err)
+                });
+            } return;
+        },
+    };
+
     const flags: Flags = result.flags;
-    const argv: ?[][:0]const u8 = result.argv;
+    const argv: [][:0]const u8 = result.argv;
     ...
 }
 ```

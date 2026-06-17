@@ -38,10 +38,18 @@ pub const defaults: Flags = .{
         .{
             .name = "files",
             .tag = "Input",
+            .long = "files",
+            .short = 'F',
+            .value = Init.InputFlagMany,
+            .desc = "Path to files",
+        },
+        .{
+            .name = "path",
+            .tag = "Input",
             .long = "path",
             .short = 'p',
-            .value = Init.InputFlagMany,
-            .desc = "Path to file",
+            .value = Init.InputFlag,
+            .desc = "Path to somewhere",
         },
     }
 };
