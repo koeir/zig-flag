@@ -453,7 +453,9 @@ pub fn ParsedResult(comptime defaults: Flags) type {
             switch (self.*) {
                 .Ok => |*results| {
                     for (results.inner.flags) |*flag| {
-                        if (flag.value != .Input) continue;
+                        if (flag.value != .Input 
+                        or flag.value.Input == .Single) 
+                            continue;
                         // Only many is deinit/freed because Single uses os argv and does not allocate memory
                         if (flag.value.Input.Many) |*input| input.deinit(allocator);
                     } allocator.free(results.inner.flags);
