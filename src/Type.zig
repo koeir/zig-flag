@@ -406,18 +406,22 @@ pub fn ParsedResult(comptime defaults: Flags) type {
     return struct {
         const Self = @This();
 
-        argv: [][:0]const u8,
-        flags: StructFlags(defaults),
-        allocator: mem.Allocator,
-        inner: struct {
-            flags: []Flag,
-            argv: *std.ArrayList([:0]const u8),
+        errs: ?*std.ArrayList(root.ParseErrorPackage),
+        results: ?struct {
+            argv: [][:0]const u8,
+            flags: StructFlags(defaults),
+            inner: struct {
+                flags: []Flag,
+                argv: *std.ArrayList([:0]const u8),
+            },
         },
 
         pub fn init(
             allocator: mem.Allocator,
             argv: *std.ArrayList([:0]const u8),
-            flags_array: []Flag
+            flags_array: []Flag,    // Memory is allocated in root.parse(). 
+                                    // It is allocated with a known array len, taken from the number of flags in initialized defaults.
+            errs: ?*std.ArrayList(root.ParseErrorPackage),
         ) !Self {
             // Using hashmap for cleaner code in populateStruct
             var parsed: std.StringHashMap(Flag) = .init(allocator);
@@ -430,26 +434,41 @@ pub fn ParsedResult(comptime defaults: Flags) type {
             const struct_flags = try helpers.populateStruct(StructFlags(defaults), parsed);
 
             return .{
-                .allocator = allocator,
-                .flags = struct_flags,
-                .argv = argv.items,
-                .inner = .{
-                    .argv = argv,
-                    .flags = flags_array
-                }
+                .errs = errs,
+                .results = .{
+                    .argv = argv.items,
+                    .flags = struct_flags,
+                    .inner = .{
+                        .argv = argv,
+                        .flags = flags_array
+                    }
+                },
             };
         }
 
-        pub fn deinit(self: *const @This()) void {
-            for (self.inner.flags) |*flag| {
-                if (flag.value != .Input) continue;
-                if (flag.value.Input.Many) |*input| input.deinit(self.allocator);
+        pub fn deinit(self: *const @This(), allocator: mem.Allocator) void {
+            if (self.results) |results| {
+                for (results.inner.flags) |*flag| {
+                    if (flag.value != .Input) continue;
+                    // Only many is deinit/freed because Single uses os argv and does not allocate memory
+                    if (flag.value.Input.Many) |*input| input.deinit(allocator);
+                }
+
+                allocator.free(results.inner.flags);
+
+                results.inner.argv.deinit(allocator);
+                allocator.destroy(results.inner.argv);
             }
 
-            self.allocator.free(self.inner.flags);
+            if (self.errs) |errs| {
+                for (errs.items) |err| {
+                    // Memory is allocated in root, duping and concatting strings.
+                    allocator.free(err.cause);
+                }
 
-            self.inner.argv.deinit(self.allocator);
-            self.allocator.destroy(self.inner.argv);
+                errs.deinit(allocator);
+                allocator.destroy(errs);
+            }
         }
     };
 }

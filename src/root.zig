@@ -11,11 +11,8 @@ pub fn parse(
     allocator: mem.Allocator,
     args: std.process.Args,
     comptime defaults: Type.Flags,
-    errptr: *?[]const u8,
     cfg: ParseConfig,
 ) !Type.ParsedResult(defaults) {
-    if (cfg.verbose == true and cfg.writer == null) return error.NoWriter;
-
     var iter = args.iterate();
 
     // Initialize the parsed flags
@@ -31,9 +28,16 @@ pub fn parse(
     errdefer out_args.deinit(allocator);
     errdefer allocator.destroy(out_args);
 
-    var isErred = false;
-    var out_error: anyerror = undefined;
+    var errs : ?*std.ArrayList(ParseErrorPackage) = try allocator.create(std.ArrayList(ParseErrorPackage));
+    errs.?.* = try std.ArrayList(ParseErrorPackage).initCapacity(allocator, 1);
+    errdefer if (errs) |*e| {
+        e.*.deinit(allocator);
+        allocator.destroy(e.*);
+    };
+
     while (iter.next()) |arg| {
+        var didErr = false;
+
         const fmt: Type.FlagFmt = helpers.flagfmt(arg) orelse {
             // If it isn't a flag, add it to out_args and continue
             //
@@ -44,83 +48,71 @@ pub fn parse(
             continue;
         };
 
+        // Slice out dashes
         switch (fmt) {
-            .Long   => {
-                // Dupe instead of just assigning so that it is safe to
-                //  `if errptr.* != allocator.free(errptr.*)`
-                //  so that error handling for short flags is prettier lol
-                //
-                // Technically not needed if arena allocator is used, and arena is recommended,
-                // but it's not good practice to assume that it would be used all the time
-                helpers.parse_flag(
-                    allocator,
-                    arg[2..], fmt,
-                    out_flags, &iter,
-                    cfg
-                ) catch |err| {
-                    isErred = true;
+            .Long   => helpers.parse_flag(allocator, arg[2..], fmt, out_flags, &iter, cfg) catch |err| {
+                didErr = true;
 
-                    if (cfg.verbose) {
-                        if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
-                        try cfg.writer.?.print("{s}: {s}\n", .{ arg,
-                            error_message(err) orelse @errorName(err) });
-                    }
+                try errs.?.append(allocator, .{
+                    .cause = try allocator.dupe(u8, arg),
+                    .err = err
+                });
+            },
+            // Iterate through each char
+            .Short  => for (arg[1..]) |c| {
+                helpers.parse_flag(allocator, &[_]u8 {c}, fmt, out_flags, &iter, cfg) catch |err| {
+                didErr = true;
 
-                    out_error = err;
-                    errptr.* = try allocator.dupeSentinel(u8, arg, 0);
-                    if (cfg.exitFirstErr) return err;
+                    const cause: []const u8 = try mem.concat(allocator, u8, &.{
+                        "-", &.{c}
+                    });
+
+                    try errs.?.append(allocator, .{
+                        .cause = cause,
+                        .err = err,
+                    });
                 };
             },
-            .Short  => {
-                for (arg[1..]) |c| {
-                    helpers.parse_flag(
-                        allocator, &[_]u8 {c}, fmt, out_flags, &iter, cfg
-                    ) catch |err| {
-                        isErred = true;
-                        if (cfg.verbose){
-                            if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
-                            try cfg.writer.?.print("-{c}: {s}\n", .{
-                                c, error_message(err) orelse @errorName(err) });
-                        }
-
-                        errptr.* = try mem.concat(allocator, u8, &.{
-                            errptr.* orelse "-", &[_]u8{c}
-                        });
-
-                        out_error = err;
-                        if (cfg.exitFirstErr) return err;
-                    };
-                }
-            },
         }
+
+        if (didErr and cfg.exitFirstErr) return .{ 
+            .errs = errs, 
+            .results = null 
+        };
     }
 
-    if (isErred) return out_error;
-    if (out_args.items.len == 1 and cfg.errOnNoArgs) {
-        if (!cfg.verbose) return error.NoArgs;
-
-        if (cfg.prefix) |prefix| try cfg.writer.?.writeAll(prefix);
-        try cfg.writer.?.print("{s}\n", .{ error_message(error.NoArgs).? });
-
-        return error.NoArgs;
-    }
+    if (errs.?.items.len < 1) errs = null;
+    if (out_args.items.len == 1 and cfg.errOnNoArgs) return error.NoArgs;
 
     // shrink out_args it because it's guaranteed to be <= args
     if (out_args.items.len < args.vector.len)
         try out_args.resize(allocator, out_args.items.len);
 
-    return .init(allocator, out_args, out_flags);
+    return .init(allocator, out_args, out_flags, errs);
 }
 
 pub const ParseConfig = struct {
     allowDups: bool = false,
-    verbose: bool = false,
-    writer: ?*std.Io.Writer = null,
-    prefix: ?[]const u8 = null,
     allowDashInput: bool = true,
     errOnNoArgs: bool = false,
     exitFirstErr: bool = true,
     delimiters: []const u8 = ",",
+};
+
+pub const ParseErrorPackage = struct {
+    err: anyerror,
+    cause: []const u8,
+};
+
+pub const ParseError = error {
+    NoArgs,
+    NoSuchFlag,
+    FlagNotSwitch,      // non-switch/non-bool Flag treated as a switch/bool
+    FlagNotArg,         // non-argumentative flag treated as an argumentative
+    DuplicateFlag,
+    ArgNoArg,           // no argument given to argumentative flag
+    NoWriter,
+    TypeMismatch,       // failure to retrieve value, type given does not match value
 };
 
 /// Returns error messages for select flag errors.
@@ -133,14 +125,3 @@ pub fn error_message(err: anyerror) ?[]const u8 {
         else                 => null,
     };
 }
-
-pub const ParseError = error {
-    NoArgs,
-    NoSuchFlag,
-    FlagNotSwitch,      // non-switch/non-bool Flag treated as a switch/bool
-    FlagNotArg,         // non-argumentative flag treated as an argumentative
-    DuplicateFlag,
-    ArgNoArg,           // no argument given to argumentative flag
-    NoWriter,
-    TypeMismatch,       // failure to retrieve value, type given does not match value
-};
