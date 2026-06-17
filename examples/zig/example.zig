@@ -22,16 +22,16 @@ pub fn main(init: std.process.Init) !void {
     const parse = try zigflag.parse(init.gpa, min.args, defaults, parsecfg);
     defer parse.deinit(init.gpa);
 
-    if (parse.errs) |errs| {
-        for (errs.items) |err| {
+    if (parse == .Err) {
+        for (parse.Err.items) |err| {
             std.debug.print("{s}: {s}\n", .{ err.cause, @errorName(err.err) });
         }
 
         return;
     }
 
-    const flags = parse.results.?.flags;
-    const argv = parse.results.?.argv;
+    const flags = parse.Ok.flags;
+    const argv = parse.Ok.argv;
 
     zigflag.Type.Flag.fmt = .{
         .columns = .one,

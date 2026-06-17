@@ -16,8 +16,9 @@ pub fn parse(
     var iter = args.iterate();
 
     // Initialize the parsed flags
-    var out_flags = try allocator.alloc(Type.Flag, defaults.list.len);
-    errdefer allocator.free(out_flags);
+    var out_flags: Type.Flags = .{ 
+        .list = try allocator.alloc(Type.Flag, defaults.list.len)
+    }; errdefer allocator.free(out_flags);
     for (defaults.list, 0..) |*value, i| {
         out_flags[i] = value.*;
         out_flags[i].default = value;
@@ -25,19 +26,22 @@ pub fn parse(
 
     var out_args: *std.ArrayList([:0]const u8) = try allocator.create(std.ArrayList([:0]const u8));
     out_args.* = try std.ArrayList([:0]const u8).initCapacity(allocator, args.vector.len);
-    errdefer out_args.deinit(allocator);
-    errdefer allocator.destroy(out_args);
+    errdefer {
+        // deinit and destroy pointer
+        out_args.deinit(allocator);
+        allocator.destroy(out_args);
+    }
 
-    var errs : ?*std.ArrayList(ParseErrorPackage) = try allocator.create(std.ArrayList(ParseErrorPackage));
-    errs.?.* = try std.ArrayList(ParseErrorPackage).initCapacity(allocator, 1);
-    errdefer if (errs) |*e| {
-        e.*.deinit(allocator);
-        allocator.destroy(e.*);
+    var errs : *?std.ArrayList(ParseErrorPackage) = try allocator.create(?std.ArrayList(ParseErrorPackage));
+    errs.* = null;
+    errdefer if (errs.*) |e| {
+        // deinit and destroy pointer
+        e.deinit(allocator);
+        allocator.destroy(e);
     };
 
+    var didErr = false;
     while (iter.next()) |arg| {
-        var didErr = false;
-
         const fmt: Type.FlagFmt = helpers.flagfmt(arg) orelse {
             // If it isn't a flag, add it to out_args and continue
             //
@@ -52,8 +56,7 @@ pub fn parse(
         switch (fmt) {
             .Long   => helpers.parse_flag(allocator, arg[2..], fmt, out_flags, &iter, cfg) catch |err| {
                 didErr = true;
-
-                try errs.?.append(allocator, .{
+                try errs.append(allocator, .{
                     .cause = try allocator.dupe(u8, arg),
                     .err = err
                 });
@@ -61,13 +64,12 @@ pub fn parse(
             // Iterate through each char
             .Short  => for (arg[1..]) |c| {
                 helpers.parse_flag(allocator, &[_]u8 {c}, fmt, out_flags, &iter, cfg) catch |err| {
-                didErr = true;
-
+                    didErr = true;
                     const cause: []const u8 = try mem.concat(allocator, u8, &.{
                         "-", &.{c}
                     });
 
-                    try errs.?.append(allocator, .{
+                    try errs.append(allocator, .{
                         .cause = cause,
                         .err = err,
                     });
@@ -75,20 +77,19 @@ pub fn parse(
             },
         }
 
-        if (didErr and cfg.exitFirstErr) return .{ 
-            .errs = errs, 
-            .results = null 
-        };
+        if (didErr and cfg.exitFirstErr) { }
     }
 
-    if (errs.?.items.len < 1) errs = null;
+    // Return errs
+    if (didErr) return .{ .Err = errs };
     if (out_args.items.len == 1 and cfg.errOnNoArgs) return error.NoArgs;
 
     // shrink out_args it because it's guaranteed to be <= args
     if (out_args.items.len < args.vector.len)
         try out_args.resize(allocator, out_args.items.len);
 
-    return .init(allocator, out_args, out_flags, errs);
+    // Return successful
+    return .init(allocator, out_args, out_flags);
 }
 
 pub const ParseConfig = struct {
