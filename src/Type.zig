@@ -18,7 +18,7 @@ pub const FlagType = enum {
     Switch, Input
 };
 
-pub const InputType = enum {
+const InputType = enum {
     Single, Many
 };
 
@@ -236,8 +236,6 @@ pub const Flag = struct {
     /// Only for show in prints, overrides long and short
     vanity: ?[]const u8 = null,
     desc:   ?[]const u8 = null,
-    /// A pointer for the `ParsedResult`'s `Flags` to the initialized ones
-    default: *const Flag = undefined,
 
     /// Center padding is calculated by
     /// value - n of chars in "-<s>, --<long>"
