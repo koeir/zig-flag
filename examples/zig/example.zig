@@ -2,7 +2,7 @@ const std = @import("std");
 const zigflag = @import("src/root.zig");
 
 const defaults = @import("./flags_init.zig").defaults;
-const Flags = zigflag.Type.StructFlags(defaults);
+const Flags = zigflag.Parse.StructFlags(defaults);
 
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
@@ -12,7 +12,7 @@ pub fn main(init: std.process.Init) !void {
     const stderr = &stderr_writer.interface;
     defer stderr.flush() catch {};
 
-    const parsecfg: zigflag.ParseConfig = .{
+    const parsecfg: zigflag.Parse.ParseConfig = .{
         .allowDashInput = true,
         .exitFirstErr = false,
         .allowDups = true,
@@ -53,7 +53,7 @@ pub fn main(init: std.process.Init) !void {
         const recursive = defaults.get("recursive").?;
         std.debug.print("{f}\n", .{recursive});
 
-        const recurseval = try defaults.getValue(zigflag.Type.Switch, "recursive");
+        const recurseval = try defaults.getValue(zigflag.Type.Flag.Switch, "recursive");
         std.debug.print("{}\n", .{recurseval});
     }
 
@@ -62,7 +62,7 @@ pub fn main(init: std.process.Init) !void {
         const force = defaults.getWithFlag("force").?;
 
         std.debug.print("{f}\n", .{force});
-        const forceval = try defaults.getValue(zigflag.Type.Switch, "force");
+        const forceval = try defaults.getValue(zigflag.Type.Flag.Switch, "force");
         std.debug.print("{}\n", .{forceval});
     }
 

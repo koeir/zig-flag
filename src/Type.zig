@@ -4,63 +4,11 @@ const helpers = @import("helpers.zig");
 const mem = std.mem;
 const eql = mem.eql;
 
-pub const Switch = bool;
-pub const Input = union(InputType) {
-    Single: ?[:0]const u8,
-    Many: ?std.ArrayList([]const u8),
-};
-
-pub const FlagFmt = enum {
-    Long, Short,
-};
-
-pub const FlagType = enum {
-    Switch, Input
-};
-
-const InputType = enum {
-    Single, Many
-};
-
-/// Initialization defaults
-pub const Init = struct {
-    /// Boolean flag
-    pub const SwitchFlag: FlagVal = .{ .Switch = false };
-
-    /// String flag
-    pub const InputFlag: FlagVal = .{ .Input = .{ .Single = null } };
-
-    /// List of strings flag
-    pub const InputFlagMany: FlagVal = .{ .Input = .{ .Many = null } };
-};
-
-pub const FlagVal = union(FlagType) {
-    Switch: Switch,                 // On/off
-    Input: Input, // Takes an argument
-
-    pub fn format(
-        self: @This(),
-        writer: *std.Io.Writer,
-    ) std.Io.Writer.Error!void {
-        switch (self) {
-            .Switch => |val| try writer.print("{}", .{ val }),
-            .Input => |t| {
-                switch (t) {
-                    .Many => |val| {
-                        if (val == null) return;
-
-                        for (val.?.items) |arg| {
-                            try writer.print("{s}, ", .{ arg });
-                        }
-                    },
-                    .Single => |val| {
-                        if (val == null) return;
-                        try writer.print("{s}", .{ val.? });
-                    }
-                }
-            }
-        }
-    }
+pub const FindError = error {
+    NoSuchFlag,
+    TypeMismatch,
+    FlagNotSwitch,
+    FlagNotArg,
 };
 
 /// Struct for initializing default flags.
@@ -227,6 +175,66 @@ pub const Flags = struct {
 
 pub const Flag = struct {
     const Self = @This();
+
+    pub const Switch = bool;
+    pub const Input = union(InputType) {
+        Single: ?[:0]const u8,
+        Many: ?std.ArrayList([]const u8),
+    };
+
+    pub const FlagFmt = enum {
+        Long, Short,
+    };
+
+    pub const FlagType = enum {
+        Switch, Input
+    };
+
+    const InputType = enum {
+        Single, Many
+    };
+
+    /// Initialization defaults
+    pub const Init = struct {
+        /// Boolean flag
+        pub const SwitchFlag: FlagVal = .{ .Switch = false };
+
+        /// String flag
+        pub const InputFlag: FlagVal = .{ .Input = .{ .Single = null } };
+
+        /// List of strings flag
+        pub const InputFlagMany: FlagVal = .{ .Input = .{ .Many = null } };
+    };
+
+    pub const FlagVal = union(FlagType) {
+        Switch: Switch,                 // On/off
+        Input: Input, // Takes an argument
+
+        pub fn format(
+            self: @This(),
+            writer: *std.Io.Writer,
+        ) std.Io.Writer.Error!void {
+            switch (self) {
+                .Switch => |val| try writer.print("{}", .{ val }),
+                .Input => |t| {
+                    switch (t) {
+                        .Many => |val| {
+                            if (val == null) return;
+
+                            for (val.?.items) |arg| {
+                                try writer.print("{s}, ", .{ arg });
+                            }
+                        },
+                        .Single => |val| {
+                            if (val == null) return;
+                            try writer.print("{s}", .{ val.? });
+                        }
+                    }
+                }
+            }
+        }
+    };
+
 
     name:   []const u8,
     tag:    ?[]const u8 = null,
@@ -397,143 +405,4 @@ pub const Flag = struct {
             }
         } if (fmt.greyOutDesc) try writer.writeAll("\x1b[0m");
     }
-};
-
-pub const Result = enum {
-    Ok, Err
-};
-
-/// Constructs and populates results for flagless arg list, flags, allocator, etc.
-pub fn ParsedResult(comptime defaults: Flags) type {
-    return union(Result) {
-        const Self = @This();
-
-        Ok: struct {
-            argv: [][:0]const u8,
-            flags: StructFlags(defaults),
-            inner: struct {
-                flags: []Flag,
-                argv: *std.ArrayList([:0]const u8),
-            },
-        },
-
-        Err: *std.ArrayList(root.ParseErrorPackage),
-
-        pub fn init(
-            allocator: mem.Allocator,
-            argv: *std.ArrayList([:0]const u8),
-            flags_array: []Flag,    // Memory is allocated in root.parse(). 
-                                    // It is allocated with a known array len, taken from the number of flags in initialized defaults.
-        ) !Self {
-            // Using hashmap for cleaner code in populateStruct
-            var parsed: std.StringHashMap(Flag) = .init(allocator);
-            defer parsed.deinit();
-
-            for (flags_array) |flag| {
-                try parsed.put(flag.name, flag);
-            }
-
-            const struct_flags = try helpers.populateStruct(StructFlags(defaults), parsed);
-
-            return .{
-                .Ok = .{
-                    .argv = argv.items,
-                    .flags = struct_flags,
-                    .inner = .{
-                        .argv = argv,
-                        .flags = flags_array
-                    }
-                }
-            };
-        }
-
-        pub fn deinit(self: *const @This(), allocator: mem.Allocator) void {
-            switch (self.*) {
-                .Ok => |*results| {
-                    for (results.inner.flags) |*flag| {
-                        if (flag.value != .Input 
-                        or flag.value.Input == .Single) 
-                            continue;
-                        // Only many is deinit/freed because Single uses os argv and does not allocate memory
-                        if (flag.value.Input.Many) |*input| input.deinit(allocator);
-                    } allocator.free(results.inner.flags);
-
-                    results.inner.argv.deinit(allocator);
-                    allocator.destroy(results.inner.argv);
-                },
-                .Err => |errs| {
-                    for (errs.items) |err| {
-                        // Memory is allocated in root, duping and concatting strings.
-                        allocator.free(err.cause);
-                    }
-
-                    errs.deinit(allocator);
-                    allocator.destroy(errs);
-                }
-            }
-        }
-    }; // lol
-}
-
-/// Initializes a struct/look-up table for holding values of parsed flags/arguments.
-/// Essentially simplifies the defaults flag array in comptime to key:value pairs
-///
-/// Is in public scope for aliasing Flags type in main or whatever
-pub fn StructFlags(comptime defaults: Flags) type {
-    // Checks for duplicate names, longs, shorts, and if a flag is missing short/long
-    inline for (defaults.list, 0..) |flag1, i| {
-        if (flag1.short == null and flag1.long == null)
-            @compileError("option has no flag: " ++ flag1.name);
-
-        inline for (defaults.list, 0..) |flag2, j| {
-            if (i == j) continue;
-
-            if (eql(u8, flag1.name, flag2.name))
-                @compileError("option has duplicate(s) name: " ++ flag1.name);
-
-            if (flag1.long) |long1| {
-                if (flag2.long) |long2| {
-                    if (eql(u8, long1, long2))
-                        @compileError("option has duplicate(s) long flag: " ++ flag1.name);
-                }
-            }
-
-            if (flag1.short) |short1| {
-                if (flag2.short) |short2| {
-                    if (short1 == short2)
-                        @compileError("option has duplicate(s) short flag: " ++ flag1.name);
-                }
-            }
-        }
-    }
-
-    comptime var field_names: [defaults.list.len][]const u8 = undefined;
-    comptime var field_types: [defaults.list.len]type = undefined;
-    comptime var field_attrs: [defaults.list.len]std.builtin.Type.StructField.Attributes = undefined;
-
-    inline for (defaults.list, 0..) |value, i| {
-        const T = switch (value.value) {
-            .Input => |in| switch (in) {
-                    .Single => ?[:0]const u8,
-                    .Many   => ?[][]const u8
-            },
-            .Switch => bool,
-        };
-
-        field_names[i] = value.name;
-        field_types[i] = T;
-        field_attrs[i] = .{
-            .@"align" = @alignOf(T),
-        };
-    }
-
-    return @Struct(
-        .auto, null, &field_names, &field_types, &field_attrs);
-}
-
-pub const FindError = error {
-    NoSuchFlag,
-    TypeMismatch,
-    FlagNotSwitch,
-    FlagNotArg,
 };

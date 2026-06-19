@@ -5,15 +5,15 @@ const mem = std.mem;
 const Type = root.Type;
 const Flag = Type.Flag;
 const Flags = Type.Flags;
-const ParseError = root.ParseError;
+const ParseError = root.Parse.ParseError;
 
 pub fn parse_flag(
     allocator: mem.Allocator,
     arg: []const u8,
-    fmt : root.Type.FlagFmt,
+    fmt : root.Type.Flag.FlagFmt,
     flags: []Flag,
     args: *std.process.Args.Iterator,
-    cfg: root.ParseConfig
+    cfg: root.Parse.ParseConfig
 ) !void {
     const flag: *Flag = blk: switch (fmt) {
         .Long => break :blk try get_long_flag(flags, arg),
@@ -86,10 +86,10 @@ pub fn populateStruct(comptime flagStruct: anytype, flags: std.StringHashMap(Typ
 
 /// Returns whether if a flag is in long or short form.
 /// Rerurns _null_ if it is not a flag.
-pub fn flagfmt(arg: []const u8) ?Type.FlagFmt {
+pub fn flagfmt(arg: []const u8) ?Type.Flag.FlagFmt {
     if (arg.len < 2) return null;
     if (arg[0] != '-') return null;
 
-    if (arg[1] == '-') return Type.FlagFmt.Long;
-    return Type.FlagFmt.Short;
+    if (arg[1] == '-') return Type.Flag.FlagFmt.Long;
+    return Type.Flag.FlagFmt.Short;
 }

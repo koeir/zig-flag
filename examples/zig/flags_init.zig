@@ -3,7 +3,7 @@ const zigflag = @import("./src/root.zig");
 const Flags = zigflag.Type.Flags;
 const Flag = zigflag.Type.Flag;
 
-const Init = zigflag.Type.Init;
+const Init = zigflag.Type.Flag.Init;
 
 // Initialize flags and their default values
 // name doesn't really matter as long as the
