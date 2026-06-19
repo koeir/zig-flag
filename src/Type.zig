@@ -176,12 +176,6 @@ pub const Flags = struct {
 pub const Flag = struct {
     const Self = @This();
 
-    pub const Switch = bool;
-    pub const Input = union(InputType) {
-        Single: ?[:0]const u8,
-        Many: ?std.ArrayList([]const u8),
-    };
-
     pub const FlagFmt = enum {
         Long, Short,
     };
@@ -190,8 +184,30 @@ pub const Flag = struct {
         Switch, Input
     };
 
-    const InputType = enum {
-        Single, Many
+    pub const Switch = bool;
+    pub const Input = struct {
+        const Inner = enum {
+            Single, Many
+        };
+
+        inner: union(Inner) {
+            Single: ?[:0]const u8,
+            Many: ?std.ArrayList([]const u8),
+        },
+
+        pub fn setArg(self: *Self.Input, allocator: mem.Allocator, arg: [:0]const u8, delimiters: []const u8) !void {
+            switch (self.inner) {
+                .Many => |*inner| {
+                    if (inner.* == null) inner.* = try .initCapacity(allocator, 1);
+
+                    var split = mem.splitAny(u8, arg, delimiters);
+                    while (split.next()) |slice| try inner.*.?.append(allocator, slice);
+                },
+                .Single => |*inner| {
+                    inner.* = arg;
+                }
+            }
+        }
     };
 
     /// Initialization defaults
@@ -200,10 +216,10 @@ pub const Flag = struct {
         pub const SwitchFlag: FlagVal = .{ .Switch = false };
 
         /// String flag
-        pub const InputFlag: FlagVal = .{ .Input = .{ .Single = null } };
+        pub const InputFlag: FlagVal = .{ .Input = .{ .inner = .{ .Single = null }}};
 
         /// List of strings flag
-        pub const InputFlagMany: FlagVal = .{ .Input = .{ .Many = null } };
+        pub const InputFlagMany: FlagVal = .{ .Input = .{ .inner = .{ .Many = null }}};
     };
 
     pub const FlagVal = union(FlagType) {
@@ -247,7 +263,7 @@ pub const Flag = struct {
 
     /// Center padding is calculated by
     /// value - n of chars in "-<s>, --<long>"
-    pub const Format = struct {
+    pub const PrintFormat = struct {
         fillerStyle: u8 = ' ',
         greyOutFiller: bool = false,
         greyOutDesc: bool = false,
@@ -261,7 +277,7 @@ pub const Flag = struct {
         } = .{},
     };
 
-    pub var fmt = Format{};
+    pub var fmt = PrintFormat{};
 
     // Toggles value of Switch type flag
     pub fn toggle(self: *Flag) FindError!void {
@@ -271,27 +287,11 @@ pub const Flag = struct {
         };
     }
 
-    pub fn setArg(self: *Flag, allocator: mem.Allocator, arg: [:0]const u8, delimiters: []const u8) !void {
-        if (self.value != .Input ) return FindError.FlagNotArg;
-
-        switch (self.value.Input) {
-            .Many => |*inner| {
-                if (inner.* == null) inner.* = try .initCapacity(allocator, 1);
-
-                var split = mem.splitAny(u8, arg, delimiters);
-                while (split.next()) |slice| try inner.*.?.append(allocator, slice);
-            },
-            .Single => |*inner| {
-                inner.* = arg;
-            }
-        }
-    }
-
     /// Assumes that default for switch is false, and null for inputs
     pub fn isDefault(self: *const Self) bool {
         return switch (self.value) {
             .Switch => |val| !val,
-            .Input => |val| switch (val) {
+            .Input => |val| switch (val.inner) {
                 inline else => |v| v == null
             }
         };

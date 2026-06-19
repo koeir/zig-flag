@@ -176,10 +176,10 @@ pub const Parse = struct {
                     .Ok => |*results| {
                         for (results.inner.flags) |*flag| {
                             if (flag.value != .Input 
-                            or flag.value.Input == .Single) 
+                            or flag.value.Input.inner == .Single) 
                                 continue;
                             // Only many is deinit/freed because Single uses os argv and does not allocate memory
-                            if (flag.value.Input.Many) |*input| input.deinit(allocator);
+                            if (flag.value.Input.inner.Many) |*input| input.deinit(allocator);
                         } allocator.free(results.inner.flags);
 
                         results.inner.argv.deinit(allocator);
@@ -237,7 +237,7 @@ pub const Parse = struct {
 
         inline for (defaults.list, 0..) |value, i| {
             const T = switch (value.value) {
-                .Input => |in| switch (in) {
+                .Input => |in| switch (in.inner) {
                         .Single => ?[:0]const u8,
                         .Many   => ?[][]const u8
                 },
