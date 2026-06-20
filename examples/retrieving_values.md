@@ -7,7 +7,7 @@ pub fn main(init: std.process.Init) !void {
     const opts: Flags = result.flags;
     // arg list that has flags removed;
     // which includes values that were taken in by input type flags
-    const args: [][:0]const u8 = result.argv;
+    const args: []const [:0]const u8 = result.argv;
 
     if (opts.force) ...
 
