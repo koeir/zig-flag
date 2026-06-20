@@ -4,21 +4,18 @@ const mem = std.mem;
 
 const Type = root.Type;
 const Flag = Type.Flag;
-const Flags = Type.Flags;
 const ParseError = root.Parse.ParseError;
 
 pub fn parse_flag(
     allocator: mem.Allocator,
     arg: []const u8,
     fmt : root.Type.Flag.FlagFmt,
-    flags: []Flag,
+    flags: Type.RuntimeFlags,
     args: *std.process.Args.Iterator,
     cfg: root.Parse.ParseConfig
 ) !void {
-    const flag: *Flag = blk: switch (fmt) {
-        .Long => break :blk try get_long_flag(flags, arg),
-        .Short => break :blk try get_short_flag(flags, arg[0]),
-    };
+    const flag = flags.getWithFlag(arg, fmt) orelse 
+        return ParseError.NoSuchFlag;
 
     // Checks:
     //  if Switch: is false?
@@ -34,46 +31,23 @@ pub fn parse_flag(
     }
 
     switch (flag.value) {
-        .Input => {
-            const next_arg = args.next() orelse {
+        .Input => |*val| {
+            const next_arg = args.next() orelse
                 return ParseError.ArgNoArg;
-            };
 
-            if (next_arg[0] == '-' and !cfg.allowDashInput) {
+            if (next_arg[0] == '-' and !cfg.allowDashInput)
                 return ParseError.ArgNoArg;
-            }
 
-            try flag.value.Input.setArg(allocator, next_arg, cfg.delimiters);
+            try val.setArg(allocator, next_arg, cfg.delimiters);
         },
 
-        .Switch => {
-            // Only toggle if not already toggled
-            if (isDefault) try flag.toggle();
-        }
+        .Switch => |*val| val.* = true,
     }
-}
-
-pub fn get_long_flag(
-    flags: []root.Type.Flag,
-    arg: []const u8,
-) ParseError!*Flag {
-    for (flags) |*flag| {
-        if (mem.eql(u8, flag.long orelse continue, arg)) return flag;
-    } return ParseError.NoSuchFlag;
-}
-
-pub fn get_short_flag(
-    flags: []root.Type.Flag,
-    arg: u8,
-) ParseError!*root.Type.Flag {
-    for (flags) |*flag| {
-        if (arg == flag.short orelse continue) return flag;
-    } return ParseError.NoSuchFlag;
 }
 
 /// Populate look-up table made with StructFlags with parsed flags/arguments.
 /// A hashmap is used just for cleaner code. The hashmap is deinitialized right after parsing flags.
-pub fn populateStruct(comptime flagStruct: anytype, flags: std.StringHashMap(Type.Flag)) !flagStruct {
+pub fn populateStruct(comptime flagStruct: anytype, flags: Type.RuntimeFlags) flagStruct {
     var ret: flagStruct = undefined;
     inline for (std.meta.fields(flagStruct)) |f| {
         @field(ret, f.name) = sw: switch (f.type) {

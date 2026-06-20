@@ -16,7 +16,8 @@ pub fn main(init: std.process.Init) !void {
         .allowDashInput = true,
         .exitFirstErr = false,
         .allowDups = true,
-        .delimiters = ",:"
+        .delimiters = ",:",
+        .errOnNoArgs = false,
     };
     
     const parse = try zigflag.parse(init.gpa, min.args, defaults, parsecfg);
@@ -26,9 +27,9 @@ pub fn main(init: std.process.Init) !void {
         .Ok  => | ok | ok,
         .Err => |errs| {
             for (errs.items) |err| {
-                std.debug.print("{s}: {s}\n", .{
-                    err.cause, @errorName(err.err)
-                });
+                if (err.cause) |cause| {
+                    std.debug.print("{s}: ", .{ cause });
+                } std.debug.print("{s}\n", .{ @errorName(err.err) });
             } return;
         },
     };
@@ -43,27 +44,21 @@ pub fn main(init: std.process.Init) !void {
 
     try defaults.usage(stderr, .{ .tagStyle = .underline });
 
-    std.debug.print("INDIVIDUAL PRINTING:\n", .{});
+    std.debug.print("\nINDIVIDUAL PRINTING:\n", .{});
     for (defaults.list) |flag| {
         std.debug.print("{f}\n", .{flag});
     }
 
     if (flags.recursive) {
         std.debug.print("\nRECURSIVE:\n", .{});
-        const recursive = defaults.get("recursive").?;
+        const recursive = comptime defaults.compFind("recursive");
         std.debug.print("{f}\n", .{recursive});
-
-        const recurseval = try defaults.getValue(zigflag.Type.Flag.Switch, "recursive");
-        std.debug.print("{}\n", .{recurseval});
     }
 
     if (flags.force) {
         std.debug.print("\nFORCE:\n", .{});
-        const force = defaults.getWithFlag("force").?;
-
+        const force = result.inner.flags.getWithFlag("force", .Long).?;
         std.debug.print("{f}\n", .{force});
-        const forceval = try defaults.getValue(zigflag.Type.Flag.Switch, "force");
-        std.debug.print("{}\n", .{forceval});
     }
 
     std.debug.print("\n", .{});

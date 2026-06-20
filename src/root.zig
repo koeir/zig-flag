@@ -12,14 +12,18 @@ pub const Parse = struct {
     pub fn parse(
         allocator: mem.Allocator,
         args: std.process.Args,
-        comptime defaults: Type.Flags,
+        comptime defaults: Type.ComptimeFlags,
         cfg: ParseConfig,
     ) !ParsedResult(defaults) {
         var iter = args.iterate();
 
         // Initialize the parsed flags
-        const out_flags = try allocator.dupe(Type.Flag, defaults.list);
-        errdefer allocator.free(out_flags);
+        var out_flags = try allocator.create(Type.RuntimeFlags);
+        out_flags.* = try .init(allocator, defaults.list);
+        errdefer {
+            out_flags.deinit(allocator);
+            allocator.destroy(out_flags);
+        }
 
         var out_args = try allocator.create(std.ArrayList([:0]const u8));
         out_args.* = try .initCapacity(allocator, args.vector.len);
@@ -39,7 +43,8 @@ pub const Parse = struct {
 
         defer if (errs.items.len > 0) {
             // If returning error, free dis
-            allocator.free(out_flags);
+            out_flags.deinit(allocator);
+            allocator.destroy(out_flags);
             out_args.deinit(allocator);
             allocator.destroy(out_args);
         } else {
@@ -60,7 +65,7 @@ pub const Parse = struct {
 
             // Slice out dashes
             switch (fmt) {
-                .Long   => helpers.parse_flag(allocator, arg[2..], fmt, out_flags, &iter, cfg)
+                .Long   => helpers.parse_flag(allocator, arg[2..], fmt, out_flags.*, &iter, cfg)
                 catch |err| {
                     try errs.append(allocator, .{
                         .cause = try allocator.dupe(u8, arg),
@@ -69,7 +74,7 @@ pub const Parse = struct {
                 },
                 // Iterate through each char
                 .Short  => for (arg[1..]) |c| {
-                    helpers.parse_flag(allocator, &[_]u8 {c}, fmt, out_flags, &iter, cfg)
+                    helpers.parse_flag(allocator, &[_]u8 {c}, fmt, out_flags.*, &iter, cfg)
                     catch |err| {
                         const cause = try mem.concat(allocator, u8, &.{
                             "-", &.{c}
@@ -89,14 +94,18 @@ pub const Parse = struct {
 
         // Return errs
         if (errs.items.len > 0) return .{ .Err = errs };
-        if (out_args.items.len == 1 and cfg.errOnNoArgs) return error.NoArgs;
+        if (out_args.items.len == 1 and cfg.errOnNoArgs) { 
+            try errs.append(allocator, .{
+                .err = ParseError.NoArgs
+            }); return .{ .Err = errs };
+        }
 
         // shrink out_args it because it's guaranteed to be <= args
         if (out_args.items.len < args.vector.len)
             try out_args.resize(allocator, out_args.items.len);
 
         // Return successful
-        return .init(allocator, out_args, out_flags);
+        return .init(out_args, out_flags);
     }
 
     /// Setting allowDups to true allows InputSingles to be overwritten if its flag is repeated
@@ -110,7 +119,7 @@ pub const Parse = struct {
 
     pub const ParseErrorPackage = struct {
         err: anyerror,
-        cause: []const u8,
+        cause: ?[]const u8 = null,
     };
 
     pub const ParseError = error {
@@ -128,7 +137,7 @@ pub const Parse = struct {
     };
 
     /// Constructs and populates results for flagless arg list, flags, allocator, etc.
-    pub fn ParsedResult(comptime defaults: Type.Flags) type {
+    pub fn ParsedResult(comptime defaults: Type.ComptimeFlags) type {
         return union(Result) {
             const Self = @This();
 
@@ -136,7 +145,7 @@ pub const Parse = struct {
                 argv: [][:0]const u8,
                 flags: StructFlags(defaults),
                 inner: struct {
-                    flags: []Type.Flag,
+                    flags: *Type.RuntimeFlags,
                     argv: *std.ArrayList([:0]const u8),
                 },
             },
@@ -144,20 +153,11 @@ pub const Parse = struct {
             Err: *std.ArrayList(ParseErrorPackage),
 
             pub fn init(
-                allocator: mem.Allocator,
                 argv: *std.ArrayList([:0]const u8),
-                flags_array: []Type.Flag,    // Memory is allocated in root.parse(). 
-                                        // It is allocated with a known array len, taken from the number of flags in initialized defaults.
-            ) !Self {
+                flags: *Type.RuntimeFlags,
+            ) Self {
                 // Using hashmap for cleaner code in populateStruct
-                var parsed: std.StringHashMap(Type.Flag) = .init(allocator);
-                defer parsed.deinit();
-
-                for (flags_array) |flag| {
-                    try parsed.put(flag.name, flag);
-                }
-
-                const struct_flags = try helpers.populateStruct(StructFlags(defaults), parsed);
+                const struct_flags = helpers.populateStruct(StructFlags(defaults), flags.*);
 
                 return .{
                     .Ok = .{
@@ -165,7 +165,7 @@ pub const Parse = struct {
                         .flags = struct_flags,
                         .inner = .{
                             .argv = argv,
-                            .flags = flags_array
+                            .flags = flags
                         }
                     }
                 };
@@ -174,21 +174,15 @@ pub const Parse = struct {
             pub fn deinit(self: *const @This(), allocator: mem.Allocator) void {
                 switch (self.*) {
                     .Ok => |*results| {
-                        for (results.inner.flags) |*flag| {
-                            if (flag.value != .Input 
-                            or flag.value.Input == .Single) 
-                                continue;
-                            // Only many is deinit/freed because Single uses os argv and does not allocate memory
-                            if (flag.value.Input.Many) |*input| input.deinit(allocator);
-                        } allocator.free(results.inner.flags);
-
+                        results.inner.flags.deinit(allocator);
                         results.inner.argv.deinit(allocator);
                         allocator.destroy(results.inner.argv);
+                        allocator.destroy(results.inner.flags);
                     },
                     .Err => |errs| {
                         for (errs.items) |err| {
                             // Memory is allocated in root, duping and concatting strings.
-                            allocator.free(err.cause);
+                            if (err.cause) |cause| allocator.free(cause);
                         }
 
                         errs.deinit(allocator);
@@ -201,9 +195,7 @@ pub const Parse = struct {
 
     /// Initializes a struct/look-up table for holding values of parsed flags/arguments.
     /// Essentially simplifies the defaults flag array in comptime to key:value pairs
-    ///
-    /// Is in public scope for aliasing Type.Flags type in main or whatever
-    pub fn StructFlags(comptime defaults: Type.Flags) type {
+    pub fn StructFlags(comptime defaults: Type.ComptimeFlags) type {
         // Checks for duplicate names, longs, shorts, and if a flag is missing short/long
         inline for (defaults.list, 0..) |flag1, i| {
             if (flag1.short == null and flag1.long == null)

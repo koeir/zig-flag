@@ -11,50 +11,59 @@ pub const FindError = error {
     FlagNotArg,
 };
 
+pub const RuntimeFlags = struct {
+    const Self = @This();
+
+    list: *std.ArrayList(Flag),
+
+    pub fn init(allocator: mem.Allocator, list: []const Flag) mem.Allocator.Error!Self {
+        var ret = try allocator.create(std.ArrayList(Flag));
+        ret.* = try .initCapacity(allocator, list.len);
+        try ret.appendSlice(allocator, list);
+
+        return .{
+            .list = ret
+        };
+    }
+
+    pub fn deinit(self: *Self, allocator: mem.Allocator) void {
+        defer {
+            self.list.deinit(allocator);
+            allocator.destroy(self.list);
+        }
+
+        for (self.list.items) |*flag| {
+            if (flag.value == .Switch
+            or  flag.value.Input == .Single
+        ) continue;
+
+            if (flag.value.Input.Many) |*in| in.deinit(allocator);
+        }
+    }
+
+    pub fn get(self: *const Self, name: []const u8) ?*Flag {
+        for (self.list.items) |*flag| {
+            if (mem.eql(u8, flag.name, name)) return flag;
+        } return null;
+    }
+
+    /// If short, assumes that "flag" is 1 char long
+    pub fn getWithFlag(self: *const Self, flag: []const u8, fmt: Flag.FlagFmt) ?*Flag {
+        for (self.list.items) |*option| {
+            switch (fmt) {
+                .Short => if (option.short orelse continue == flag[0]) return option,
+                .Long => if (mem.eql(u8, option.long orelse continue, flag)) return option,
+            }
+        } return null;
+    }
+};
+
 /// Struct for initializing default flags.
 /// Also an interface for retrieving `Flag`s for printing and populating look-up table.
-pub const Flags = struct {
+pub const ComptimeFlags = struct {
     const Self = @This();
 
     list: []const Flag,
-
-    /// Returns null if not found
-    pub fn get(self: *const Self, name: []const u8) ?Flag {
-        return for (self.list) |flag| {
-            if (eql(u8, flag.name, name)) break flag;
-        } else null;
-    }
-
-    /// Errs if not found
-    pub fn tryGet(self: *const Self, name: []const u8) FindError!Flag {
-        return for (self.list) |flag| {
-            if (eql(u8, flag.name, name)) break flag;
-        } else FindError.NoSuchFlag;
-    }
-
-    /// Assumes that, if it's a short, is only one char long.
-    pub fn getWithFlag(self: *const Self, flag: []const u8) ?Flag {
-        return for (self.list) |ret| {
-            if (ret.short) |short| {
-                if (flag[0] == short) break ret;
-            }
-
-            if (ret.long) |long| {
-                if (eql(u8, flag, long)) break ret;
-            }
-        } else null;
-    }
-
-    /// Assert value in parameter instead of as a field in the expression
-    pub fn getValue(self: *const Self, T: type, name: []const u8) FindError!T {
-        const flag = try self.tryGet(name);
-        switch (flag.value) {
-            inline else => |val| {
-                if (@TypeOf(val) != T) return FindError.TypeMismatch;
-                return val;
-            },
-        }
-    }
 
     /// Finds flags in the initialized struct
     pub fn compFind(
@@ -90,10 +99,6 @@ pub const Flags = struct {
                 return val;
             },
         }
-    }
-
-    pub fn deinit(self: *const Self, allocator: mem.Allocator) void {
-        allocator.free(self.list);
     }
 
     pub const UsageConfig = struct {
