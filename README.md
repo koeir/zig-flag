@@ -47,15 +47,24 @@ pub const defaults: zigflag.Type.ComptimeFlags = .{
             .tag = "Switches",
             .long = "recursive",
             .short = 'r',
+        //  .value = .init(.Switch),    // boolean; is the default, specifying this value is unnecessary
             .desc = "Recurse into directories",
         },
         .{
-            .name = "file",
+            .name = "path",
             .tag = "Input",
             .long = "path",
             .short = 'p',
-            .value = .init(.Input), // or .initInput(.Single)
-            .desc = "Path to file",
+            .value = .init(.Input), // or .initInput(.Single); ?[:0]const u8
+            .desc = "Path to somewhere",
+        },
+        .{
+            .name = "files",
+            .tag = "Input",
+            .long = "files",
+            .short = 'f',
+            .value = .initInput(.Many), // ?[][]const u8
+            .desc = "Path to files",
         },
     }
 };
