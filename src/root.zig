@@ -137,6 +137,7 @@ pub const Parse = struct {
         return union(enum) {
             const Self = @This();
 
+            Err: *std.ArrayList(ParseErrorPackage),
             Ok: struct {
                 argv: []const [:0]const u8,
                 flags: StructFlags(defaults),
@@ -147,13 +148,10 @@ pub const Parse = struct {
                 },
             },
 
-            Err: *std.ArrayList(ParseErrorPackage),
-
             pub fn init(
                 argv: *std.ArrayList([:0]const u8),
                 flags: *Type.RuntimeFlags,
             ) Self {
-                // Using hashmap for cleaner code in populateStruct
                 const struct_flags = helpers.populateStruct(StructFlags(defaults), flags.*);
 
                 return .{

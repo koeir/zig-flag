@@ -21,9 +21,7 @@ pub const RuntimeFlags = struct {
         ret.* = try .initCapacity(allocator, list.len);
         try ret.appendSlice(allocator, list);
 
-        return .{
-            .list = ret
-        };
+        return .{ .list = ret };
     }
 
     pub fn deinit(self: *Self, allocator: mem.Allocator) void {
@@ -34,8 +32,8 @@ pub const RuntimeFlags = struct {
 
         for (self.list.items) |*flag| {
             if (flag.value == .Switch
-            or  flag.value.Input == .Single
-        ) continue;
+            or flag.value.Input == .Single
+            ) continue;
 
             if (flag.value.Input.Many) |*in| in.deinit(allocator);
         }
