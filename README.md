@@ -65,15 +65,7 @@ pub const defaults: zigflag.Type.ComptimeFlags = .{
 ```zig
 pub fn main(init: std.process.Init) !void {
     ...
-    // Make config
-    const parsecfg: zigflag.ParseConfig = .{
-        .allowDashInput = true,
-        .exitFirstErr = false,
-        .allowDups = true,
-        .delimiters = ",:"
-    };
-    
-    const parse = try zigflag.parse(init.gpa, min.args, defaults, parsecfg);
+    const parse = try zigflag.parse(init.gpa, min.args, defaults, .{});
     defer parse.deinit(init.gpa);
 
     // error checking and retrieving values
@@ -94,6 +86,8 @@ The flags are stored in a struct in which the fields are names of the flags. Eac
 4. [Use](https://github.com/koeir/zigflag/blob/master/examples/retrieving_values.md)
 ```zig
 ...
+const Flags = zigflag.Type.StructFlags(defaults);
+
 pub fn main(init: std.process.Init) !void {
     ...
     const opts: Flags = result.flags;
