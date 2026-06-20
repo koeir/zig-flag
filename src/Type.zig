@@ -218,18 +218,6 @@ pub const Flag = struct {
         }
     };
 
-    /// Initialization defaults
-    pub const Init = struct {
-        /// Boolean flag
-        pub const SwitchFlag: FlagType = .{ .Switch = false };
-
-        /// String flag
-        pub const InputFlag: FlagType = .{ .Input = .{ .inner = .{ .Single = null }}};
-
-        /// List of strings flag
-        pub const InputFlagMany: FlagType = .{ .Input = .{ .inner = .{ .Many = null }}};
-    };
-
     name:   []const u8,
     tag:    ?[]const u8 = null,
     long:   ?[]const u8 = null,
