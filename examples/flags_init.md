@@ -1,7 +1,8 @@
 ```zig
-const zigflag = @import("zigflag");
+const zigflag = @import("./src/root.zig");
+
 const Flags = zigflag.Type.Flags;
-const Init = zigflag.Type.Init;
+const Flag = zigflag.Type.Flag;
 
 // Initialize flags and their default values
 // name doesn't really matter as long as the
@@ -38,7 +39,7 @@ pub const defaults: Flags = .{
             .tag = "Input",
             .long = "files",
             .short = 'F',
-            .value = Init.InputFlagMany,
+            .value = .initInput(.Many),
             .desc = "Path to files",
         },
         .{
@@ -46,7 +47,7 @@ pub const defaults: Flags = .{
             .tag = "Input",
             .long = "path",
             .short = 'p',
-            .value = Init.InputFlag,
+            .value = .init(.Input), // or .initInput(.Single)
             .desc = "Path to somewhere",
         },
     }
