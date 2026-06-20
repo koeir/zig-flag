@@ -142,8 +142,9 @@ pub const Parse = struct {
             const Self = @This();
 
             Ok: struct {
-                argv: [][:0]const u8,
+                argv: []const [:0]const u8,
                 flags: StructFlags(defaults),
+                // Shouldn't be accessed manually. Should only be accessed by init and deinit.
                 inner: struct {
                     flags: *Type.RuntimeFlags,
                     argv: *std.ArrayList([:0]const u8),

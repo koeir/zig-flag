@@ -35,7 +35,7 @@ pub fn main(init: std.process.Init) !void {
     };
 
     const flags: Flags = result.flags;
-    const argv: [][:0]const u8 = result.argv;
+    const argv: []const [:0]const u8 = result.argv;
 
     zigflag.Type.Flag.fmt = .{
         .columns = .one,
