@@ -26,7 +26,7 @@ pub fn parse_flag(
         // many input flags are allowed to have dups
         const isInputType = flag.value == .Input;
         if (!isDefault and !cfg.allowDups and
-            (!isInputType or flag.value.Input.inner != .Many))
+            (!isInputType or flag.value.Input != .Many))
                 return ParseError.DuplicateFlag;
     }
 
@@ -75,8 +75,8 @@ pub fn populateStruct(comptime flagStruct: anytype, flags: std.StringHashMap(Typ
     inline for (std.meta.fields(flagStruct)) |f| {
         @field(ret, f.name) = sw: switch (f.type) {
             bool            => flags.get(f.name).?.value.Switch,
-            ?[:0]const u8   => break :sw flags.get(f.name).?.value.Input.inner.Single,
-            ?[][]const u8   => break :sw if (flags.get(f.name).?.value.Input.inner.Many) |v| v.items else null,
+            ?[:0]const u8   => break :sw flags.get(f.name).?.value.Input.Single,
+            ?[][]const u8   => break :sw if (flags.get(f.name).?.value.Input.Many) |v| v.items else null,
             inline else     => @compileError("Invalid type during struct population.")
         };
     }

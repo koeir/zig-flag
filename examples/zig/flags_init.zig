@@ -40,7 +40,7 @@ pub const defaults: Flags = .{
             .tag = "Input",
             .long = "files",
             .short = 'F',
-            .value = Init.InputFlagMany,
+            .value = .initInput(.Many),
             .desc = "Path to files",
         },
         .{
@@ -48,7 +48,7 @@ pub const defaults: Flags = .{
             .tag = "Input",
             .long = "path",
             .short = 'p',
-            .value = Init.InputFlag,
+            .value = .init(.Input), // or .initInput(.Single)
             .desc = "Path to somewhere",
         },
     }

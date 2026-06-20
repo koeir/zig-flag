@@ -180,26 +180,34 @@ pub const Flag = struct {
         Long, Short,
     };
 
-    pub const FlagType = enum {
-        Switch, Input
+    pub const FlagType = union(enum) {
+        Switch: Switch,
+        Input: Input,
+
+        pub fn init(variant: std.meta.Tag(FlagType)) FlagType {
+            return switch (variant) {
+                .Switch => .{ .Switch = false },
+                .Input => .{ .Input = .{ .Single = null }},
+            };
+        }
+
+        pub fn initInput(variant: std.meta.Tag(Self.Input)) FlagType {
+            return switch (variant) {
+                .Single => .{ .Input = .{ .Single = null }},
+                .Many => .{ .Input = .{ .Many = null }},
+            };
+        }
     };
 
     pub const Switch = bool;
-    pub const Input = struct {
-        const Inner = enum {
-            Single, Many
-        };
-
-        inner: union(Inner) {
-            Single: ?[:0]const u8,
-            Many: ?std.ArrayList([]const u8),
-        },
+    pub const Input = union(enum) {
+        Single: ?[:0]const u8,
+        Many: ?std.ArrayList([]const u8),
 
         pub fn setArg(self: *Self.Input, allocator: mem.Allocator, arg: [:0]const u8, delimiters: []const u8) !void {
-            switch (self.inner) {
+            switch (self.*) {
                 .Many => |*inner| {
                     if (inner.* == null) inner.* = try .initCapacity(allocator, 1);
-
                     var split = mem.splitAny(u8, arg, delimiters);
                     while (split.next()) |slice| try inner.*.?.append(allocator, slice);
                 },
@@ -213,50 +221,20 @@ pub const Flag = struct {
     /// Initialization defaults
     pub const Init = struct {
         /// Boolean flag
-        pub const SwitchFlag: FlagVal = .{ .Switch = false };
+        pub const SwitchFlag: FlagType = .{ .Switch = false };
 
         /// String flag
-        pub const InputFlag: FlagVal = .{ .Input = .{ .inner = .{ .Single = null }}};
+        pub const InputFlag: FlagType = .{ .Input = .{ .inner = .{ .Single = null }}};
 
         /// List of strings flag
-        pub const InputFlagMany: FlagVal = .{ .Input = .{ .inner = .{ .Many = null }}};
+        pub const InputFlagMany: FlagType = .{ .Input = .{ .inner = .{ .Many = null }}};
     };
-
-    pub const FlagVal = union(FlagType) {
-        Switch: Switch,                 // On/off
-        Input: Input, // Takes an argument
-
-        pub fn format(
-            self: @This(),
-            writer: *std.Io.Writer,
-        ) std.Io.Writer.Error!void {
-            switch (self) {
-                .Switch => |val| try writer.print("{}", .{ val }),
-                .Input => |t| {
-                    switch (t) {
-                        .Many => |val| {
-                            if (val == null) return;
-
-                            for (val.?.items) |arg| {
-                                try writer.print("{s}, ", .{ arg });
-                            }
-                        },
-                        .Single => |val| {
-                            if (val == null) return;
-                            try writer.print("{s}", .{ val.? });
-                        }
-                    }
-                }
-            }
-        }
-    };
-
 
     name:   []const u8,
     tag:    ?[]const u8 = null,
     long:   ?[]const u8 = null,
     short:  ?u8 = null,
-    value:  FlagVal = .{ .Switch = false },
+    value:  FlagType = .{ .Switch = false },
     /// Only for show in prints, overrides long and short
     vanity: ?[]const u8 = null,
     desc:   ?[]const u8 = null,
@@ -291,7 +269,7 @@ pub const Flag = struct {
     pub fn isDefault(self: *const Self) bool {
         return switch (self.value) {
             .Switch => |val| !val,
-            .Input => |val| switch (val.inner) {
+            .Input => |val| switch (val) {
                 inline else => |v| v == null
             }
         };
