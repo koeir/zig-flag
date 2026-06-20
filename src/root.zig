@@ -132,13 +132,9 @@ pub const Parse = struct {
         TypeMismatch,       // failure to retrieve value, type given does not match value
     };
 
-    pub const Result = enum {
-        Ok, Err
-    };
-
     /// Constructs and populates results for flagless arg list, flags, allocator, etc.
     pub fn ParsedResult(comptime defaults: Type.ComptimeFlags) type {
-        return union(Result) {
+        return union(enum) {
             const Self = @This();
 
             Ok: struct {
