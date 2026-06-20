@@ -4,6 +4,9 @@ const zigflag = @import("./src/root.zig");
 const Flags = zigflag.Type.Flags;
 const Flag = zigflag.Type.Flag;
 
+// Parsing assumes that .value is set to false (for switches) or null (for input)
+// `.value = .init()` just sets it to the default of that type
+
 // Initialize flags and their default values
 // name doesn't really matter as long as the
 // members are all of type Flag

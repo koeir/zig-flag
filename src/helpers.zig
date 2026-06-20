@@ -20,6 +20,9 @@ pub fn parse_flag(
         .Short => break :blk try get_short_flag(flags, arg[0]),
     };
 
+    // Checks:
+    //  if Switch: is false?
+    //  if Input:  is null?
     const isDefault = flag.isDefault();
     {
         // If it's not default and not allow dups, return dup flags error
