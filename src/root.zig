@@ -66,7 +66,7 @@ pub const Parse = struct {
 
             // Slice out dashes
             switch (fmt) {
-                .Long   => helpers.parse_flag(allocator, arg[2..], fmt, out_flags.*, &iter, cfg)
+                .Long   => helpers.parseFlag(allocator, arg[2..], fmt, out_flags.*, &iter, cfg)
                 catch |err| {
                     try errs.append(allocator, .{
                         .cause = try allocator.dupe(u8, arg),
@@ -75,7 +75,7 @@ pub const Parse = struct {
                 },
                 // Iterate through each char
                 .Short  => for (arg[1..]) |c| {
-                    helpers.parse_flag(allocator, &[_]u8 {c}, fmt, out_flags.*, &iter, cfg)
+                    helpers.parseFlag(allocator, &[_]u8 {c}, fmt, out_flags.*, &iter, cfg)
                     catch |err| {
                         const cause = try mem.concat(allocator, u8, &.{
                             "-", &.{c}
@@ -243,7 +243,7 @@ pub const Parse = struct {
 };
 
 /// Returns error messages for select flag errors.
-pub fn error_message(err: anyerror) ?[]const u8 {
+pub fn errorMessage(err: anyerror) ?[]const u8 {
     return switch (err) {
         error.NoArgs         => "Missing arguments",
         error.NoSuchFlag     => "No such flag",

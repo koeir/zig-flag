@@ -6,7 +6,7 @@ const Type = root.Type;
 const Flag = Type.Flag;
 const ParseError = root.Parse.ParseError;
 
-pub fn parse_flag(
+pub fn parseFlag(
     allocator: mem.Allocator,
     arg: []const u8,
     fmt : root.Type.Flag.FlagFmt,

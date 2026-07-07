@@ -271,13 +271,13 @@ pub const Flag = struct {
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
         switch (fmt.columns) {
-            .one => try format_onecolumn(self, writer),
-            .two => try format_twocolumns(self, writer),
+            .one => try formatOneColumn(self, writer),
+            .two => try formatTwoColumns(self, writer),
         }
     }
 
     // returns number of chars printed
-    fn print_flags(
+    fn printFlags(
         self: @This(),
         padding_left: usize,
         writer: *std.Io.Writer,
@@ -324,12 +324,12 @@ pub const Flag = struct {
         return minus;
     }
 
-    fn format_onecolumn(
+    fn formatOneColumn(
         self: @This(),
         writer: *std.Io.Writer,
     ) !void {
         const padding = fmt.padding;
-        _ = try self.print_flags(padding.left, writer);
+        _ = try self.printFlags(padding.left, writer);
 
         const padding_left = padding.left + padding.desc_left - 1;
 
@@ -350,13 +350,13 @@ pub const Flag = struct {
         try writer.writeAll("\n");
     }
 
-    fn format_twocolumns(
+    fn formatTwoColumns(
         self: @This(),
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
         // Don't change the actual padding var
         const padding = fmt.padding;
-        const minus = try self.print_flags(padding.left, writer);
+        const minus = try self.printFlags(padding.left, writer);
 
         if (padding.center < minus) @panic("Need more center-padding!");
 
