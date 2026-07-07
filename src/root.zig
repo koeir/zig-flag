@@ -42,13 +42,14 @@ pub const Parse = struct {
         }
 
         defer if (errs.items.len > 0) {
-            // If returning error, free dis
+            // free items on error 
+            // before returning to the previous stack frame
             out_flags.deinit(allocator);
             allocator.destroy(out_flags);
             out_args.deinit(allocator);
             allocator.destroy(out_args);
         } else {
-            // else free errors
+            // free errors array if successful
             errs.deinit(allocator);
             allocator.destroy(errs);
         };
