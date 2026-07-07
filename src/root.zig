@@ -136,8 +136,6 @@ pub const Parse = struct {
     /// Constructs and populates results for flagless arg list, flags, allocator, etc.
     pub fn ParsedResult(comptime defaults: Type.ComptimeFlags) type {
         return union(enum) {
-            const Self = @This();
-
             Err: *std.ArrayList(ParseErrorPackage),
             Ok: struct {
                 argv: []const [:0]const u8,
@@ -152,7 +150,7 @@ pub const Parse = struct {
             pub fn init(
                 argv: *std.ArrayList([:0]const u8),
                 flags: *Type.RuntimeFlags,
-            ) Self {
+            ) @This() {
                 const struct_flags = helpers.populateStruct(StructFlags(defaults), flags.*);
 
                 return .{
