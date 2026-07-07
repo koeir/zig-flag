@@ -126,9 +126,9 @@ pub const Parse = struct {
         NoArgs,
         NoSuchFlag,
         FlagNotSwitch,      // non-switch/non-bool Type.Flag treated as a switch/bool
-        FlagNotArg,         // non-argumentative flag treated as an argumentative
+        FlagNotInput,         // non-input flag treated as an input
         DuplicateFlag,
-        ArgNoArg,           // no argument given to argumentative flag
+        ArgNoArg,           // no argument given to input flag
         TypeMismatch,       // failure to retrieve value, type given does not match value
     };
 
