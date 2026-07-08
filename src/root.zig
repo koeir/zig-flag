@@ -127,9 +127,9 @@ pub const Parse = struct {
         NoArgs,
         NoSuchFlag,
         FlagNotSwitch,      // non-switch/non-bool Type.Flag treated as a switch/bool
-        FlagNotInput,         // non-input flag treated as an input
+        FlagNotInput,       // non-input flag treated as an input
         DuplicateFlag,
-        ArgNoArg,           // no argument given to input flag
+        MissingInput,       // no argument given to input flag
         TypeMismatch,       // failure to retrieve value, type given does not match value
     };
 
@@ -248,7 +248,7 @@ pub fn errorMessage(err: anyerror) ?[]const u8 {
         error.NoArgs         => "Missing arguments",
         error.NoSuchFlag     => "No such flag",
         error.DuplicateFlag  => "Duplicate flag",
-        error.ArgNoArg       => "No argument supplied",
+        error.MissingInput   => "No argument supplied",
         else                 => null,
     };
 }

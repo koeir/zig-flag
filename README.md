@@ -156,7 +156,7 @@ pub const ParseErrors = error {
     FlagNotSwitch,      // non-switch/non-bool Flag treated as a switch/bool
     FlagNotArg,         // non-input type flag treated as an input type
     DuplicateFlag,      // flag appears twice in arg list; can be ignored with config
-    ArgNoArg,           // no argument given to input type flag
+    MissingInput,       // no argument given to input type flag
     TypeMismatch,       // a more general FlagNotSwitch/FlagNotArg
 }
 ```

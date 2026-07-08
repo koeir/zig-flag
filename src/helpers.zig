@@ -33,10 +33,10 @@ pub fn parseFlag(
     switch (flag.value) {
         .Input => |*val| {
             const next_arg = args.next() orelse
-                return ParseError.ArgNoArg;
+                return ParseError.MissingInput;
 
             if (next_arg[0] == '-' and !cfg.allowDashInput)
-                return ParseError.ArgNoArg;
+                return ParseError.MissingInput;
 
             try val.setArg(allocator, next_arg, cfg.delimiters);
         },
