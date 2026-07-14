@@ -35,7 +35,7 @@ pub fn main(init: std.process.Init) !void {
     };
 
     const flags: Flags = result.flags;
-    const argv: []const [:0]const u8 = result.argv;
+    const positionals: []const [:0]const u8 = result.pos;
 
     zigflag.Type.Flag.fmt = .{
         .columns = .one,
@@ -74,7 +74,7 @@ pub fn main(init: std.process.Init) !void {
 
     std.debug.print("\n", .{});
     std.debug.print("flagless args:\n", .{});
-    for (argv) |arg| {
-        std.debug.print("{s} ", .{arg});
+    for (positionals) |pos| {
+        std.debug.print("{s} ", .{pos});
     } std.debug.print("\n", .{});
 }

@@ -18,19 +18,19 @@ pub const Parse = struct {
         var iter = args.iterate();
 
         // Initialize the parsed flags
-        var out_flags = try allocator.create(Type.RuntimeFlags);
-        out_flags.* = try .init(allocator, defaults.list);
+        var parsed_flags = try allocator.create(Type.RuntimeFlags);
+        parsed_flags.* = try .init(allocator, defaults.list);
         errdefer {
-            out_flags.deinit(allocator);
-            allocator.destroy(out_flags);
+            parsed_flags.deinit(allocator);
+            allocator.destroy(parsed_flags);
         }
 
-        var out_args = try allocator.create(std.ArrayList([:0]const u8));
-        out_args.* = try .initCapacity(allocator, args.vector.len);
+        var positionals = try allocator.create(std.ArrayList([:0]const u8));
+        positionals.* = try .initCapacity(allocator, args.vector.len);
         errdefer {
             // deinit and destroy pointer
-            out_args.deinit(allocator);
-            allocator.destroy(out_args);
+            positionals.deinit(allocator);
+            allocator.destroy(positionals);
         }
 
         var errs = try allocator.create(std.ArrayList(ParseErrorPackage));
@@ -42,12 +42,12 @@ pub const Parse = struct {
         }
 
         defer if (errs.items.len > 0) {
-            // free items on error 
+            // free items on error
             // before returning to the previous stack frame
-            out_flags.deinit(allocator);
-            allocator.destroy(out_flags);
-            out_args.deinit(allocator);
-            allocator.destroy(out_args);
+            parsed_flags.deinit(allocator);
+            allocator.destroy(parsed_flags);
+            positionals.deinit(allocator);
+            allocator.destroy(positionals);
         } else {
             // free errors array if successful
             errs.deinit(allocator);
@@ -56,17 +56,17 @@ pub const Parse = struct {
 
         while (iter.next()) |arg| {
             const fmt: Type.Flag.FlagFmt = helpers.flagfmt(arg) orelse {
-                // If it isn't a flag, add it to out_args and continue
+                // If it isn't a flag, add it to positionals and continue
                 //
                 // note that input flags take the next arg,
                 // which would be skipped by the iterator
-                try out_args.append(allocator, arg);
+                try positionals.append(allocator, arg);
                 continue;
             };
 
             // Slice out dashes
             switch (fmt) {
-                .Long   => helpers.parseFlag(allocator, arg[2..], fmt, out_flags.*, &iter, cfg)
+                .Long   => helpers.parseFlag(allocator, arg[2..], fmt, parsed_flags.*, &iter, cfg)
                 catch |err| {
                     try errs.append(allocator, .{
                         .cause = try allocator.dupe(u8, arg),
@@ -75,7 +75,7 @@ pub const Parse = struct {
                 },
                 // Iterate through each char
                 .Short  => for (arg[1..]) |c| {
-                    helpers.parseFlag(allocator, &[_]u8 {c}, fmt, out_flags.*, &iter, cfg)
+                    helpers.parseFlag(allocator, &[_]u8 {c}, fmt, parsed_flags.*, &iter, cfg)
                     catch |err| {
                         const cause = try mem.concat(allocator, u8, &.{
                             "-", &.{c}
@@ -95,18 +95,18 @@ pub const Parse = struct {
 
         // Return errs
         if (errs.items.len > 0) return .{ .Err = errs };
-        if (out_args.items.len == 1 and cfg.errOnNoArgs) { 
+        if (positionals.items.len == 1 and cfg.errOnNoArgs) {
             try errs.append(allocator, .{
                 .err = ParseError.NoArgs
             }); return .{ .Err = errs };
         }
 
-        // shrink out_args it because it's guaranteed to be <= args
-        if (out_args.items.len < args.vector.len)
-            try out_args.resize(allocator, out_args.items.len);
+        // shrink positionals it because it's guaranteed to be <= args
+        if (positionals.items.len < args.vector.len)
+            try positionals.resize(allocator, positionals.items.len);
 
         // Return successful
-        return .init(out_args, out_flags);
+        return .init(positionals, parsed_flags);
     }
 
     /// Setting allowDups to true allows InputSingles to be overwritten if its flag is repeated
@@ -138,27 +138,27 @@ pub const Parse = struct {
         return union(enum) {
             Err: *std.ArrayList(ParseErrorPackage),
             Ok: struct {
-                argv: []const [:0]const u8,
+                pos: []const [:0]const u8,
                 flags: StructFlags(defaults),
                 // Shouldn't be accessed manually. Should only be accessed by init and deinit.
                 inner: struct {
                     flags: *Type.RuntimeFlags,
-                    argv: *std.ArrayList([:0]const u8),
+                    pos: *std.ArrayList([:0]const u8),
                 },
             },
 
             pub fn init(
-                argv: *std.ArrayList([:0]const u8),
+                pos: *std.ArrayList([:0]const u8),
                 flags: *Type.RuntimeFlags,
             ) @This() {
                 const struct_flags = helpers.populateStruct(StructFlags(defaults), flags.*);
 
                 return .{
                     .Ok = .{
-                        .argv = argv.items,
+                        .pos = pos.items,
                         .flags = struct_flags,
                         .inner = .{
-                            .argv = argv,
+                            .pos = pos,
                             .flags = flags
                         }
                     }
@@ -169,8 +169,8 @@ pub const Parse = struct {
                 switch (self.*) {
                     .Ok => |*results| {
                         results.inner.flags.deinit(allocator);
-                        results.inner.argv.deinit(allocator);
-                        allocator.destroy(results.inner.argv);
+                        results.inner.pos.deinit(allocator);
+                        allocator.destroy(results.inner.pos);
                         allocator.destroy(results.inner.flags);
                     },
                     .Err => |errs| {
@@ -238,7 +238,12 @@ pub const Parse = struct {
         }
 
         return @Struct(
-            .auto, null, &field_names, &field_types, &field_attrs);
+            .auto
+            ,null
+            ,&field_names
+            ,&field_types
+            ,&field_attrs
+        );
     }
 };
 

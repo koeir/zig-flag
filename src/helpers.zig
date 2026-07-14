@@ -14,7 +14,7 @@ pub fn parseFlag(
     args: *std.process.Args.Iterator,
     cfg: root.Parse.ParseConfig
 ) !void {
-    const flag = flags.getWithFlag(arg, fmt) orelse 
+    const flag = flags.getWithFlag(arg, fmt) orelse
         return ParseError.NoSuchFlag;
 
     // Checks:
