@@ -7,22 +7,19 @@ pub const defaults: zigflag.Type.ComptimeFlags = .{
         .{
             .name = "recursive",
             .tag = "Switches",
-            .long = "recursive",
-            .short = 'r',
+            .short = 'r', .long = "recursive",
             .desc = "Recurse into directories",
         },
         .{
             .name = "force",
             .tag = "Switches",
-            .long = "force",
-            .short = 'f',
+            .short = 'f', .long = "force",
             .vanity = "-[n|f], --[no-]force",
             .desc = "Skip confirmation prompts",
         },
         .{  // by default, untagged flags will not be printed
             .name = "no-force",
-            .long = "no-force",
-            .short = 'n',
+            .short = 'n', .long = "no-force",
             .desc = "Do not skip confirmation prompts",
         },
         // Arguments will accept the next argv
@@ -31,16 +28,14 @@ pub const defaults: zigflag.Type.ComptimeFlags = .{
         .{
             .name = "files",
             .tag = "Input",
-            .long = "files",
-            .short = 'F',
+            .short = 'F', .long = "files",
             .value = .initInput(.Many),
             .desc = "Path to files",
         },
         .{
             .name = "path",
             .tag = "Input",
-            .long = "path",
-            .short = 'p',
+            .short = 'p', .long = "path",
             .value = .init(.Input), // or .initInput(.Single)
             .desc = "Path to somewhere",
         },
