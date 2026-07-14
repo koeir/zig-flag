@@ -222,7 +222,7 @@ pub const Flag = struct {
     };
 
     name:   []const u8,
-    tag:    ?[]const u8 = null,
+    tag:    ?[]const u8 = "Options",
     long:   ?[]const u8 = null,
     short:  ?u8 = null,
     value:  FlagType = .{ .Switch = false },

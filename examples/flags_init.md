@@ -1,4 +1,6 @@
 ```zig
+const zigflag = @import("zigflag");
+
 // Initialize flags and their default values
 // name doesn't really matter as long as the
 // members are all of type Flag
@@ -14,11 +16,13 @@ pub const defaults: zigflag.Type.ComptimeFlags = .{
             .name = "force",
             .tag = "Switches",
             .short = 'f', .long = "force",
-            .vanity = "-[n|f], --[no-]force",
+            .vanity = "-[n|f], --[no-]force",   // "vanity" overrides how it is printed
             .desc = "Skip confirmation prompts",
         },
-        .{  // by default, untagged flags will not be printed
+        .{  // By default, "tag" is set to Options
+            // setting a tag to null keeps it from being printed
             .name = "no-force",
+            .tag = null,
             .short = 'n', .long = "no-force",
             .desc = "Do not skip confirmation prompts",
         },
