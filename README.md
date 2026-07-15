@@ -95,7 +95,7 @@ The flags are stored in a struct in which the fields are names of the flags. Eac
 4. [Use](https://github.com/koeir/zigflag/blob/master/examples/retrieving_values.md)
 ```zig
 ...
-const Flags = zigflag.Type.StructFlags(defaults);
+const Flags = zigflag.Type.FlagsLUT(defaults);
 
 pub fn main(init: std.process.Init) !void {
     ...

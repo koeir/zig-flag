@@ -139,7 +139,7 @@ pub const Parse = struct {
             Err: *std.ArrayList(ParseErrorPackage),
             Ok: struct {
                 pos: []const [:0]const u8,
-                flags: StructFlags(defaults),
+                flags: FlagsLUT(defaults),
                 // Shouldn't be accessed manually. Should only be accessed by init and deinit.
                 inner: struct {
                     flags: *Type.RuntimeFlags,
@@ -151,7 +151,7 @@ pub const Parse = struct {
                 pos: *std.ArrayList([:0]const u8),
                 flags: *Type.RuntimeFlags,
             ) @This() {
-                const struct_flags = helpers.populateStruct(StructFlags(defaults), flags.*);
+                const struct_flags = helpers.populateStruct(FlagsLUT(defaults), flags.*);
 
                 return .{
                     .Ok = .{
@@ -189,7 +189,7 @@ pub const Parse = struct {
 
     /// Initializes a struct/look-up table for holding values of parsed flags/arguments.
     /// Essentially simplifies the defaults flag array in comptime to key:value pairs
-    pub fn StructFlags(comptime defaults: Type.ComptimeFlags) type {
+    pub fn FlagsLUT(comptime defaults: Type.ComptimeFlags) type {
         // Checks for duplicate names, longs, shorts, and if a flag is missing short/long
         inline for (defaults.list, 0..) |flag1, i| {
             if (flag1.short == null and flag1.long == null)

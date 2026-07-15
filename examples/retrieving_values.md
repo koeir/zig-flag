@@ -1,13 +1,12 @@
 ```zig
 const defaults = @import("./init_flags.zig").defaults;
-const Flags = zigflag.Type.StructFlags(defaults);
+const Flags = zigflag.Type.FlagsLUT(defaults);
 
 pub fn main(init: std.process.Init) !void {
     ...
     const opts: Flags = result.flags;
-    // arg list that has flags removed;
-    // which includes values that were taken in by input type flags
-    const args: []const [:0]const u8 = result.argv;
+    // positionals / list of arguments without flags
+    const positionals: []const [:0]const u8 = result.pos;
 
     if (opts.force) ...
 

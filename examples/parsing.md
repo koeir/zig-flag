@@ -2,7 +2,7 @@
 const std = @import("std");
 const zigflag = @import("zigflag");
 const defaults = @import("./init_flags.zig").defaults;
-const Flags = zigflag.Type.StructFlags(defaults);
+const Flags = zigflag.Type.FlagsLUT(defaults);
 
 pub fn main(init: std.process.Init) !void {
     ...
@@ -30,7 +30,7 @@ pub fn main(init: std.process.Init) !void {
     };
 
     const flags: Flags = result.flags;
-    const argv: [][:0]const u8 = result.argv;
+    const positionals: [][:0]const u8 = result.pos;
     ...
 }
 ```
