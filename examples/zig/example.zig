@@ -2,7 +2,7 @@ const std = @import("std");
 const zigflag = @import("src/root.zig");
 
 const defaults = @import("./flags_init.zig").defaults;
-const Flags = zigflag.Parse.StructFlags(defaults);
+const Flags = zigflag.Parse.FlagsLUT(defaults);
 
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
