@@ -39,7 +39,7 @@ zig fetch --save git+https://github.com/koeir/zigflag
 
 2. [Initialize flags](https://github.com/koeir/zigflag/blob/master/examples/flags_init.md)
 ```zig
-pub const defaults: zigflag.Type.ComptimeFlags = .{
+pub const options: zigflag.Type.ComptimeFlags = .{
     .list = &.{
         .{
             .name = "recursive",
@@ -54,7 +54,7 @@ pub const defaults: zigflag.Type.ComptimeFlags = .{
 ```zig
 pub fn main(init: std.process.Init) !void {
     ...
-    const parse = try zigflag.parse(init.gpa, min.args, defaults, .{});
+    const parse = try zigflag.parse(init.gpa, min.args, options, .{});
     defer parse.deinit(init.gpa);
 
     // error checking and retrieving values
@@ -75,7 +75,7 @@ The flags are stored in a struct in which the fields are names of the flags. Eac
 4. [Use](https://github.com/koeir/zigflag/blob/master/examples/retrieving_values.md)
 ```zig
 ...
-const Flags = zigflag.Type.FlagsLUT(defaults);
+const Flags = zigflag.Type.FlagsLUT(options);
 
 pub fn main(init: std.process.Init) !void {
     ...
