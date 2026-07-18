@@ -257,6 +257,38 @@ pub const Flag = struct {
 
     pub var fmt = PrintFormat{};
 
+    pub fn init(
+        comptime opts: struct {
+            name:   ?[]const u8 = null,
+            tag:    ?[]const u8 = "Options",
+            long:   ?[]const u8 = null,
+            short:  ?u8 = null,
+            value:  FlagType = .{ .Switch = false },
+            vanity: ?[]const u8 = null,
+            desc:   ?[]const u8 = null,
+        }
+    ) Self {
+        var ret = opts;
+
+        if (opts.name == null) {
+            if (opts.long) |long| {
+                ret.name = long;
+            } else if (opts.short) |short| {
+                ret.name = short;
+            } else @compileError("option has no possible name nor flag");
+        }
+
+        return .{
+            .name = ret.name.?,
+            .tag = ret.tag,
+            .long = ret.long,
+            .short = ret.short,
+            .value = ret.value,
+            .vanity = ret.vanity,
+            .desc = ret.desc,
+        };
+    }
+
     // Toggles value of Switch type flag
     pub fn toggle(self: *Flag) FindError!void {
         return switch (self.value) {

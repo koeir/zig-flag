@@ -5,12 +5,8 @@ const zigflag = @import("./src/root.zig");
 // members are all of type Flag
 pub const options: zigflag.Type.InitFlags = .{
     .list = &.{
-        .{
-            .name = "recursive",
-            .tag = "Switches",
-            .short = 'r', .long = "recursive",
-            .desc = "Recurse into directories",
-        },
+        // Sets name to either long or short, prioritizing long
+        .init(.{ .short = 'r', .long = "recursive"}),
         .{
             .name = "force",
             .tag = "Switches",
