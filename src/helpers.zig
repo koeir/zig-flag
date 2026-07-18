@@ -47,7 +47,7 @@ pub fn parseFlag(
 
 /// Populate look-up table made with StructFlags with parsed flags/arguments.
 /// A hashmap is used just for cleaner code. The hashmap is deinitialized right after parsing flags.
-pub fn populateStruct(comptime flagStruct: anytype, flags: Type.RuntimeFlags) flagStruct {
+pub fn populateStruct(comptime flagStruct: type, flags: Type.RuntimeFlags) flagStruct {
     var ret: flagStruct = undefined;
     inline for (std.meta.fields(flagStruct)) |f| {
         @field(ret, f.name) = sw: switch (f.type) {
