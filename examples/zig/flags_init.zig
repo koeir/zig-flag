@@ -3,7 +3,7 @@ const zigflag = @import("./src/root.zig");
 // Initialize flags and their default values
 // name doesn't really matter as long as the
 // members are all of type Flag
-pub const options: zigflag.Type.ComptimeFlags = .{
+pub const options: zigflag.Type.InitFlags = .{
     .list = &.{
         .{
             .name = "recursive",

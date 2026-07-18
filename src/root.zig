@@ -12,7 +12,7 @@ pub const Parse = struct {
     pub fn parse(
         allocator: mem.Allocator,
         args: std.process.Args,
-        comptime defaults: Type.ComptimeFlags,
+        comptime defaults: Type.InitFlags,
         cfg: ParseConfig,
     ) !ParsedResult(defaults) {
         var iter = args.iterate();
@@ -134,7 +134,7 @@ pub const Parse = struct {
     };
 
     /// Constructs and populates results for flagless arg list, flags, allocator, etc.
-    pub fn ParsedResult(comptime defaults: Type.ComptimeFlags) type {
+    pub fn ParsedResult(comptime defaults: Type.InitFlags) type {
         return union(enum) {
             Err: *std.ArrayList(ParseErrorPackage),
             Ok: struct {
@@ -189,7 +189,7 @@ pub const Parse = struct {
 
     /// Initializes a struct/look-up table for holding values of parsed flags/arguments.
     /// Essentially simplifies the defaults flag array in comptime to key:value pairs
-    pub fn FlagsLUT(comptime defaults: Type.ComptimeFlags) type {
+    pub fn FlagsLUT(comptime defaults: Type.InitFlags) type {
         // Checks for duplicate names, longs, shorts, and if a flag is missing short/long
         inline for (defaults.list, 0..) |flag1, i| {
             if (flag1.short == null and flag1.long == null)

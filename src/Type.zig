@@ -58,7 +58,7 @@ pub const RuntimeFlags = struct {
 
 /// Struct for initializing default flags.
 /// Also an interface for retrieving `Flag`s for printing and populating look-up table.
-pub const ComptimeFlags = struct {
+pub const InitFlags = struct {
     const Self = @This();
 
     list: []const Flag,
