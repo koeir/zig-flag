@@ -40,31 +40,11 @@ zig fetch --save git+https://github.com/koeir/zigflag
 2. [Initialize flags](https://github.com/koeir/zigflag/blob/master/examples/flags_init.md)
 ```zig
 pub const defaults: zigflag.Type.ComptimeFlags = .{
-    .list = &.
-    {
+    .list = &.{
         .{
             .name = "recursive",
-            .tag = "Switches",
-            .long = "recursive",
-            .short = 'r',
-        //  .value = .init(.Switch),    // boolean; is the default, specifying this value is unnecessary
+            .short = 'r', .long = "recursive",
             .desc = "Recurse into directories",
-        },
-        .{
-            .name = "path",
-            .tag = "Input",
-            .long = "path",
-            .short = 'p',
-            .value = .init(.Input), // or .initInput(.Single); ?[:0]const u8
-            .desc = "Path to somewhere",
-        },
-        .{
-            .name = "files",
-            .tag = "Input",
-            .long = "files",
-            .short = 'f',
-            .value = .initInput(.Many), // ?[][]const u8
-            .desc = "Path to files",
         },
     }
 };
@@ -102,7 +82,9 @@ pub fn main(init: std.process.Init) !void {
     const opts: Flags = result.flags;
     // arg list that has flags removed;
     // which includes values that were taken in by input type flags
-    const args: []const [:0]const u8 = result.argv;
+    //
+    // aka positionals
+    const positionals: []const [:0]const u8 = result.pos;
 
     if (opts.force) ...
 
