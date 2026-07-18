@@ -46,6 +46,9 @@ pub const options: zigflag.Type.ComptimeFlags = .{
             .short = 'r', .long = "recursive",
             .desc = "Recurse into directories",
         },
+        // or
+        // .init(.{ .short = 'r', .long = "recursive"}),
+        // Sets name to either long or short, prioritizing long
     }
 };
 ```
