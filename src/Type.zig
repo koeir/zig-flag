@@ -257,6 +257,10 @@ pub const Flag = struct {
 
     pub var fmt = PrintFormat{};
 
+    /// Allows you to init without specifying the name. Makes the name default to
+    /// either the long flag or the short flag, prioritizing the long flag.
+    /// This arguably barely saves any time lol, but does reduce redundancy and
+    /// makes compile errors more readable.
     pub fn init(
         comptime opts: struct {
             name:   ?[]const u8 = null,
@@ -270,12 +274,16 @@ pub const Flag = struct {
     ) Self {
         var ret = opts;
 
+        if (opts.long == null and opts.short == null) {
+            @compileError("option has no flag");
+        }
+
         if (opts.name == null) {
             if (opts.long) |long| {
                 ret.name = long;
             } else if (opts.short) |short| {
                 ret.name = short;
-            } else @compileError("option has no possible name nor flag");
+            } else unreachable;
         }
 
         return .{
