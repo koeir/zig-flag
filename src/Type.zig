@@ -63,6 +63,15 @@ pub const ComptimeFlags = struct {
 
     list: []const Flag,
 
+    pub fn parse(
+        comptime self: Self, 
+        args: std.process.Args,
+        cfg: root.Parse.ParseConfig,
+        allocator: mem.Allocator,
+    ) !root.Parse.ParsedResult(self) {
+        return root.parse(allocator, args, self, cfg);
+    }
+
     /// Finds flags in the initialized struct
     pub fn compFind(
         comptime defaults: Self,

@@ -1,8 +1,8 @@
 const std = @import("std");
 const zigflag = @import("src/root.zig");
 
-const defaults = @import("./flags_init.zig").defaults;
-const Flags = zigflag.Parse.FlagsLUT(defaults);
+const options = @import("./flags_init.zig").options;
+const Flags = zigflag.Parse.FlagsLUT(options);
 
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
@@ -20,7 +20,7 @@ pub fn main(init: std.process.Init) !void {
         .errOnNoArgs = false,
     };
     
-    const parse = try zigflag.parse(init.gpa, min.args, defaults, parsecfg);
+    const parse = try options.parse(min.args, parsecfg, init.gpa);
     defer parse.deinit(init.gpa);
 
     const result = switch (parse) {
@@ -42,16 +42,16 @@ pub fn main(init: std.process.Init) !void {
         .greyOutDesc = true,
     };
 
-    try defaults.usage(stderr, .{ .tagStyle = .underline });
+    try options.usage(stderr, .{ .tagStyle = .underline });
 
     std.debug.print("\nINDIVIDUAL PRINTING:\n", .{});
-    for (defaults.list) |flag| {
+    for (options.list) |flag| {
         std.debug.print("{f}\n", .{flag});
     }
 
     if (flags.recursive) {
         std.debug.print("\nRECURSIVE:\n", .{});
-        const recursive = comptime defaults.compFind("recursive");
+        const recursive = comptime options.compFind("recursive");
         std.debug.print("{f}\n", .{recursive});
     }
 
