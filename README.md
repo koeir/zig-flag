@@ -20,10 +20,10 @@ See [examples/formatting.md](examples/formatting.md)
 
 ```zsh
 // Specific tag
-zig fetch --save https://github.com/koeir/zigflag/archive/refs/tags/v0.x.x.tar.gz
+zig fetch --save https://github.com/koeir/zig-flag/archive/refs/tags/v0.x.x.tar.gz
 
 // Or master branch
-zig fetch --save git+https://github.com/koeir/zigflag
+zig fetch --save git+https://github.com/koeir/zig-flag
 ```
 
 ```zig
@@ -37,7 +37,7 @@ zig fetch --save git+https://github.com/koeir/zigflag
     exe.root_module.addImport("zigflag", zigflag.module("zigflag"));
 ```
 
-2. [Initialize flags](https://github.com/koeir/zigflag/blob/master/examples/flags_init.md)
+2. [Initialize flags](https://github.com/koeir/zig-flag/blob/master/examples/flags_init.md)
 ```zig
 pub const options: zigflag.Type.InitFlags = .{
     .list = &.{
@@ -53,7 +53,7 @@ pub const options: zigflag.Type.InitFlags = .{
 };
 ```
 
-3. [Parse flags](https://github.com/koeir/zigflag/blob/master/examples/parsing.md)
+3. [Parse flags](https://github.com/koeir/zig-flag/blob/master/examples/parsing.md)
 ```zig
 pub fn main(init: std.process.Init) !void {
     ...
@@ -75,7 +75,7 @@ pub fn main(init: std.process.Init) !void {
 ```
 The flags are stored in a struct in which the fields are names of the flags. Each field will have their corresponding values (`Switch`/`bool`, `Input.Single`/`?[:0]const u8`, `Input.Many`/`?[]const []const u8`). The struct also holds the inner arrays, and necessary components for deinit. `gpa` is used here, but it might be more convenient to use arena allocators.
 
-4. [Use](https://github.com/koeir/zigflag/blob/master/examples/retrieving_values.md)
+4. [Use](https://github.com/koeir/zig-flag/blob/master/examples/retrieving_values.md)
 ```zig
 ...
 const Flags = zigflag.Type.FlagsLUT(options);
