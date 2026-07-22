@@ -73,7 +73,7 @@ pub fn main(init: std.process.Init) !void {
     std.debug.print("{s}\n", .{ path });
 
     std.debug.print("\n", .{});
-    std.debug.print("flagless args:\n", .{});
+    std.debug.print("progname + positionals:\n", .{});
     for (positionals) |pos| {
         std.debug.print("{s} ", .{pos});
     } std.debug.print("\n", .{});

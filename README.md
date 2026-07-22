@@ -41,14 +41,20 @@ zig fetch --save git+https://github.com/koeir/zig-flag
 ```zig
 pub const options: zigflag.Type.InitFlags = .{
     .list = &.{
+        // Boolean/Switch type flag
         .{
             .name = "recursive",
             .short = 'r', .long = "recursive",
             .desc = "Recurse into directories",
         },
         // or
-        // .init(.{ .short = 'r', .long = "recursive" }),
-        // Sets name to either long or short, prioritizing long
+        // Initializes name with either long or short flag,
+        // prioritizing the long flag
+        .init(.{ 
+            .long = "path", 
+            .short = 'p', 
+            .value = .init(.Input)  // Takes an argument; see more at the link above
+        }),
     }
 };
 ```

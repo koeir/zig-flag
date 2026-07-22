@@ -31,12 +31,10 @@ pub const options: zigflag.Type.InitFlags = .{
             .value = .initInput(.Many),
             .desc = "Path to files",
         },
-        .{
-            .name = "path",
-            .tag = "Input",
-            .short = 'p', .long = "path",
-            .value = .init(.Input), // or .initInput(.Single)
-            .desc = "Path to somewhere",
-        },
+        .init(.{ 
+		.short = 'p', 
+		.long = "path", 
+		.value = .init(.Input) 
+        }),
     }
 };
