@@ -39,7 +39,7 @@ zig fetch --save git+https://github.com/koeir/zigflag
 
 2. [Initialize flags](https://github.com/koeir/zigflag/blob/master/examples/flags_init.md)
 ```zig
-pub const options: zigflag.Type.ComptimeFlags = .{
+pub const options: zigflag.Type.InitFlags = .{
     .list = &.{
         .{
             .name = "recursive",
@@ -47,7 +47,7 @@ pub const options: zigflag.Type.ComptimeFlags = .{
             .desc = "Recurse into directories",
         },
         // or
-        // .init(.{ .short = 'r', .long = "recursive"}),
+        // .init(.{ .short = 'r', .long = "recursive" }),
         // Sets name to either long or short, prioritizing long
     }
 };
@@ -92,10 +92,10 @@ pub fn main(init: std.process.Init) !void {
     if (opts.force) ...
 
     const recursive: bool = opts.recursive;
-    const path: ?[:0]const u8 = opts.path;
+    const path: [:0]const u8 = opts.path orelse "nowhere";
 
     if (!recursive) ...
-    std.debug.print("{s}\n", .{ path orelse "nowhere" });
+    std.debug.print("{s}\n", .{ path });
 
     if (opts.files) |files| {
         for (files) |file| ...
@@ -139,7 +139,7 @@ pub const ParseErrors = error {
     NoArgs,             // argc < 2
     NoSuchFlag,         // unrecognized flag in arg list
     FlagNotSwitch,      // non-switch/non-bool Flag treated as a switch/bool
-    FlagNotArg,         // non-input type flag treated as an input type
+    FlagNotInput,         // non-input type flag treated as an input type
     DuplicateFlag,      // flag appears twice in arg list; can be ignored with config
     MissingInput,       // no argument given to input type flag
     TypeMismatch,       // a more general FlagNotSwitch/FlagNotArg
