@@ -63,7 +63,7 @@ pub fn populateStruct(comptime flagStruct: type, flags: Type.RuntimeFlags) flagS
 
 /// Returns whether if a flag is in long or short form.
 /// Rerurns _null_ if it is not a flag.
-pub fn flagfmt(arg: []const u8) ?Type.Flag.FlagFmt {
+pub fn flagFmt(arg: []const u8) ?Type.Flag.FlagFmt {
     if (arg.len < 2) return null;
     if (arg[0] != '-') return null;
 

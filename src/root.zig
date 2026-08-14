@@ -4,7 +4,7 @@ pub const Type = @import("Type.zig");
 
 const mem = std.mem;
 
-pub const flagfmt = helpers.flagfmt;
+pub const flagFmt = helpers.flagfmt;
 pub const parse = Parse.parse;
 
 pub const Parse = struct {
@@ -55,7 +55,7 @@ pub const Parse = struct {
         };
 
         while (iter.next()) |arg| {
-            const fmt: Type.Flag.FlagFmt = helpers.flagfmt(arg) orelse {
+            const fmt: Type.Flag.FlagFmt = helpers.flagFmt(arg) orelse {
                 // If it isn't a flag, add it to positionals and continue
                 //
                 // note that input flags take the next arg,
